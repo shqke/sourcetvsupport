@@ -1,0 +1,25 @@
+# vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
+import os.path
+
+project = HLTVSupport.HL2Project(builder, 'sourcetvsupport_mm')
+project.sources += [
+  'plugin_mm.cpp',
+  'ext_sm.cpp',
+  'gamedata.cpp',
+  '../../public/CDetour/detours.cpp',
+  '../../public/asm/asm.c',
+  '../../public/libudis86/decode.c',
+  '../../public/libudis86/itab.c',
+  '../../public/libudis86/syn-att.c',
+  '../../public/libudis86/syn-intel.c',
+  '../../public/libudis86/syn.c',
+  '../../public/libudis86/udis86.c',
+]
+
+for sdk_name in HLTVSupport.sdks:
+  sdk = HLTVSupport.sdks[sdk_name]
+  binary = HLTVSupport.HL2Config(project, 'sourcetvsupport_mm.' + sdk.ext, sdk)
+  compiler = binary.compiler
+  compiler.defines += ['HAVE_STRING_H'];
+
+HLTVSupport.binaries += builder.Add(project)
