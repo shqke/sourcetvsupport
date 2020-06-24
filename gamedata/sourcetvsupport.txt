@@ -1,0 +1,85 @@
+"Games"
+{
+	"left4dead2"
+	{
+		"Offsets"
+		{
+			"CBaseServer::stringTableCRC"
+			{
+				"linux" "184"
+				"windows" "184"
+			}
+			
+			"CBaseServer::GetChallengeNr"
+			{
+				"linux" "54"
+				"windows" "55"
+			}
+
+			"CBaseServer::GetChallengeType"
+			{
+				"linux" "55"
+				"windows" "56"
+			}
+
+			"CBaseServer::ReplyChallenge"
+			{
+				"linux" "60"
+				"windows" "61"
+			}
+
+			"CHLTVServer::CClientFrameManager"
+			{
+				"linux" "460"
+				"windows" "472"
+			}
+		}
+		
+		"Signatures"
+		{
+			"CHLTVDemoRecorder::RecordStringTables"
+			{
+				"library"	"engine"
+				"linux"		"@_ZN17CHLTVDemoRecorder18RecordStringTablesEv"
+				"windows"	"\x55\x8B\xEC\xB8\x1C\x00\x04\x00"
+			}
+			
+			"CBaseServer::IsExclusiveToLobbyConnections"
+			{
+				"library"	"engine"
+				"linux"		"@_ZNK11CBaseServer29IsExclusiveToLobbyConnectionsEv"
+				"windows"	"\x8B\x01\x8B\x50\x5C\xFF\xD2\x84\xC0"
+			}
+
+			"CSteam3Server::NotifyClientDisconnect"
+			{
+				"library"	"engine"
+				"linux"		"@_ZN13CSteam3Server22NotifyClientDisconnectEP11CBaseClient"
+				"windows"	"\x55\x8B\xEC\x83\xEC\x1C\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x53\x56\x8B\x75\x08"
+			}
+			
+			"CBaseClient::SendFullConnectEvent"
+			{
+				"library"	"engine"
+				"linux"		"@_ZN11CBaseClient20SendFullConnectEventEv"
+				"windows"	"\x56\x57\x8B\xF9\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x01\x8B\x50\x18"
+			}
+			
+			"CFrameSnapshotManager::LevelChanged"
+			{
+				"library"	"engine"
+				"linux"		"@_ZN21CFrameSnapshotManager12LevelChangedEv"
+				// 56 8B F1 8D 4E 58 
+				"windows"	"\x56\x8B\xF1\x8D\x4E\x58"
+			}
+			
+			"CHLTVServer::AddNewFrame"
+			{
+				"library"	"engine"
+				"linux"		"@_ZN11CHLTVServer11AddNewFrameEP12CClientFrame"
+				// 55 8B EC 83 EC 20 A1 ? ? ? ? 53 56 57
+				"windows"	"\x55\x8B\xEC\x83\xEC\x20\xA1\x2A\x2A\x2A\x2A\x53\x56\x57"
+			}
+		}
+	}
+}

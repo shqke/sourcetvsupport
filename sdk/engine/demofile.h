@@ -1,0 +1,65 @@
+//===== Copyright © 1996-2005, Valve Corporation, All rights reserved. ======//
+//
+// Purpose: 
+//
+//===========================================================================//
+
+#ifndef DEMOFILE_H
+#define DEMOFILE_H
+#ifdef _WIN32
+#pragma once
+#endif
+
+#include "demo.h"
+
+#include <tier2/utlstreambuffer.h>
+#include <tier1/bitbuf.h>
+
+#include <demofile/demoformat.h>
+
+//-----------------------------------------------------------------------------
+// Demo file 
+//-----------------------------------------------------------------------------
+class CDemoFile  
+{
+public:
+	bool IsOpen()
+	{
+		return m_Buffer.IsOpen();
+	}
+
+	void WriteRawData(const char *buffer, int length)
+	{
+		m_Buffer.PutInt(length);
+		m_Buffer.Put(buffer, length);
+	}
+
+	void WriteCmdHeader(unsigned char cmd, int tick, int playerSlot = 0)
+	{
+		m_Buffer.PutUnsignedChar(cmd);
+		m_Buffer.PutInt(tick);
+		m_Buffer.PutUnsignedChar(playerSlot);
+	}
+
+	void WriteStringTables(bf_write *buf, int tick)
+	{
+		if (!IsOpen())
+		{
+			DevMsg("CDemoFile::WriteStringTables: Haven't opened file yet!\n");
+			return;
+		}
+
+		WriteCmdHeader(9, tick);
+
+		WriteRawData((char*)buf->GetBasePointer(), buf->GetNumBytesWritten());
+	}
+
+public:
+	char			m_szFileName[MAX_PATH];	//name of current demo file
+	demoheader_t    m_DemoHeader;  //general demo info
+
+private:
+	CUtlStreamBuffer m_Buffer;
+};
+
+#endif // DEMOFILE_H
