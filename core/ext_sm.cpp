@@ -120,7 +120,7 @@ DETOUR_DECL_MEMBER1(Handler_CHLTVServer_AddNewFrame, CClientFrame *, CClientFram
 		numFramesToKeep = MAX_CLIENT_FRAMES;
 	}
 
-	auto &hltvFrameManager = g_Extension->ref_CClientFrameManager(reinterpret_cast<CHLTVServer *>(this));
+	auto &hltvFrameManager = smext->ref_CClientFrameManager(reinterpret_cast<CHLTVServer *>(this));
 
 	int nClientFrameCount = hltvFrameManager.CountClientFrames();
 	while (nClientFrameCount > numFramesToKeep) {
@@ -157,19 +157,20 @@ DETOUR_DECL_STATIC6(Handler_SteamInternal_GameServer_Init, bool, uint32, unIP, u
 		return false;
 	}
 
-	g_Extension->OnGameServer_Init();
+	smext->OnGameServer_Init();
 
 	return true;
 }
 
 DETOUR_DECL_STATIC0(Handler_SteamGameServer_Shutdown, void)
 {
-	g_Extension->OnGameServer_Shutdown();
+	smext->OnGameServer_Shutdown();
 
 	DETOUR_STATIC_CALL(Handler_SteamGameServer_Shutdown)();
 }
 //
 
+// SMExtension
 SMExtension::SMExtension()
 {
 	m_bIsLoaded = false;
@@ -187,35 +188,37 @@ SMExtension::SMExtension()
 	detour_CHLTVServer_AddNewFrame = NULL;
 }
 
-// SMExtension
 void SMExtension::Load()
 {
-	if (sdktools == NULL || (sv = sdktools->GetIServer()) == NULL) {
-		smutils->LogError(myself, "Unable to retrieve sv instance pointer!");
-	}
-
 	if (m_bIsLoaded) {
 		return;
 	}
 
+	if ((sv = sdktools->GetIServer()) == NULL) {
+		smutils->LogError(myself, "Unable to retrieve sv instance pointer!");
+
+		return;
+	}
+
+	// sm1.9- support
 	SourceMod::PassInfo params[] = {
+#if SMINTERFACE_BINTOOLS_VERSION == 4
 		{ PassType_Basic, PASSFLAG_BYVAL, sizeof(int), NULL, 0 },
 		{ PassType_Basic, PASSFLAG_BYVAL, sizeof(netadr_t *), NULL, 0 },
+#else
+		{ PassType_Basic, PASSFLAG_BYVAL, sizeof(int) },
+		{ PassType_Basic, PASSFLAG_BYVAL, sizeof(netadr_t *) },
+#endif
 	};
 
-	if (bintools != NULL) {
-		vcall_CBaseServer_GetChallengeNr = bintools->CreateVCall(vtblindex_CBaseServer_GetChallengeNr, 0, 0, &params[0], &params[1], 1);
-		if (vcall_CBaseServer_GetChallengeNr == NULL) {
-			smutils->LogError(myself, "Unable to create ICallWrapper for \"CBaseServer::GetChallengeNr\"!");
-		}
-
-		vcall_CBaseServer_GetChallengeType = bintools->CreateVCall(vtblindex_CBaseServer_GetChallengeType, 0, 0, &params[0], &params[1], 1);
-		if (vcall_CBaseServer_GetChallengeType == NULL) {
-			smutils->LogError(myself, "Unable to create ICallWrapper for \"CBaseServer::GetChallengeType\"!");
-		}
+	vcall_CBaseServer_GetChallengeNr = bintools->CreateVCall(vtblindex_CBaseServer_GetChallengeNr, 0, 0, &params[0], &params[1], 1);
+	if (vcall_CBaseServer_GetChallengeNr == NULL) {
+		smutils->LogError(myself, "Unable to create ICallWrapper for \"CBaseServer::GetChallengeNr\"!");
 	}
-	else {
-		smutils->LogError(myself, "Unable to retrieve IBinTools interface!");
+
+	vcall_CBaseServer_GetChallengeType = bintools->CreateVCall(vtblindex_CBaseServer_GetChallengeType, 0, 0, &params[0], &params[1], 1);
+	if (vcall_CBaseServer_GetChallengeType == NULL) {
+		smutils->LogError(myself, "Unable to create ICallWrapper for \"CBaseServer::GetChallengeType\"!");
 	}
 
 	detour_SteamInternal_GameServer_Init->EnableDetour();
@@ -563,7 +566,9 @@ void SMExtension::OnExtensionsAllLoaded()
 	SM_GET_LATE_IFACE(SDKTOOLS, sdktools);
 	SM_GET_LATE_IFACE(BINTOOLS, bintools);
 
-	Load();
+	if (sdktools != NULL && bintools != NULL) {
+		Load();
+	}
 }
 
 bool SMExtension::QueryInterfaceDrop(SMInterface *pInterface)

@@ -57,7 +57,7 @@ bool VSPPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameS
 		cvar->RemoveFlags(FCVAR_DEVELOPMENTONLY);
 	}
 	
-	fprintf(stderr, PLUGIN_LOG_PREFIX "SourceTV related convars (%d out of %d) were successfully exposed. Unloading...\n", handled, NELEMS(cvars));
+	printf(PLUGIN_LOG_PREFIX "SourceTV related convars (%d out of %d) were successfully exposed. Unloading...\n", handled, NELEMS(cvars));
 
 	return false;
 }

@@ -158,7 +158,7 @@ class HLTVSupportConfig(object):
       '-fvisibility=hidden',
     ]
     cxx.cxxflags += [
-      '-std=c++11',
+      '-std=c++14',
       '-fpermissive',
       '-fno-exceptions',
       '-fno-threadsafe-statics',
@@ -180,6 +180,8 @@ class HLTVSupportConfig(object):
       cxx.cxxflags += ['-Wno-delete-non-virtual-dtor']
     if cxx.version >= 'gcc-4.8':
       cxx.cflags += ['-Wno-unused-result']
+    if cxx.version >= 'gcc-8.0':
+      cxx.cxxflags += ['-Wno-class-memaccess']
 
     if have_clang:
       cxx.cxxflags += ['-Wno-implicit-exception-spec-mismatch']
@@ -206,7 +208,6 @@ class HLTVSupportConfig(object):
       '_CRT_SECURE_NO_WARNINGS',
       '_CRT_NONSTDC_NO_DEPRECATE',
       '_ITERATOR_DEBUG_LEVEL=0',
-	  '_GLIBCXX_USE_CXX11_ABI=0',
     ]
     cxx.cflags += [
       '/W3',
@@ -247,7 +248,7 @@ class HLTVSupportConfig(object):
     cxx.defines += ['_LINUX', 'POSIX']
     cxx.linkflags += ['-lm']
     if cxx.vendor == 'gcc':
-      cxx.linkflags += ['-static-libgcc']
+      cxx.linkflags += ['-static-libgcc', '-static-libstdc++']
     elif cxx.vendor == 'clang':
       cxx.linkflags += ['-lgcc_eh']
 
@@ -334,9 +335,6 @@ class HLTVSupportConfig(object):
       if builder.target_platform in ['linux', 'mac']:
         compiler.defines += ['NO_HOOK_MALLOC', 'NO_MALLOC_OVERRIDE']
 
-    if sdk.name == 'csgo' and builder.target_platform == 'linux':
-      compiler.linkflags += ['-lstdc++']
-
     for path in paths:
       compiler.cxxincludes += [os.path.join(sdk.path, *path)]
 
@@ -418,7 +416,7 @@ HLTVSupport.configure()
 
 # Add additional buildscripts here
 BuildScripts = [
-  'AMBuilder',
+  'core/AMBuilder',
   'vsp/AMBuilder',
   'loader/AMBuilder',
 ]
@@ -428,4 +426,4 @@ if builder.backend == 'amb2':
     'PackageScript',
   ]
 
-builder.RunBuildScripts(BuildScripts, { 'HLTVSupport': HLTVSupport})
+builder.RunBuildScripts(BuildScripts, { 'HLTVSupport': HLTVSupport })

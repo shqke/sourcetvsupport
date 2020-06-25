@@ -3,10 +3,19 @@
 #include <string.h>
 #include <ISmmPluginExt.h>
 
-#include "../config.h"
+#include "../core/config.h"
 
 #include <sm_platform.h>
 #include <os/am-shared-library.h>
+
+// sm1.9- support
+#if !defined(PLATFORM_SEP)
+#if defined(PLATFORM_WINDOWS)
+#define PLATFORM_SEP			"\\"
+#else
+#define PLATFORM_SEP			"/"
+#endif
+#endif
 
 #define CORE_L4D_FILE	"sourcetvsupport_mm.2.l4d." PLATFORM_LIB_EXT
 #define CORE_L4D2_FILE	"sourcetvsupport_mm.2.l4d2." PLATFORM_LIB_EXT

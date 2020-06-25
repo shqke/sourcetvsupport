@@ -3,7 +3,7 @@
 
 // VSP Interface
 #include <iserverplugin.h>
-#include "../config.h"
+#include "../core/config.h"
 
 class VSPPlugin:
 	public IServerPluginCallbacks
