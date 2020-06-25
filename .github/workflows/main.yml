@@ -2,6 +2,10 @@ name: Build & Deploy
 
 on:
   push:
+    paths-ignore:
+    - .**
+    - LICENSE
+    - README.md
     branches: master
 
 jobs:
@@ -65,7 +69,7 @@ jobs:
           repository: alliedmodders/ambuild
           path: ambuild
         
-      - name: Set up Python
+      - name: Setting up Python
         uses: actions/setup-python@v2
         
       - name: Setting up ambuild
@@ -91,7 +95,7 @@ jobs:
         with:
           path: sourcetvsupport
         
-      - name: Compile SourceTVSupport files
+      - name: Compiling SourceTVSupport files
         working-directory: sourcetvsupport
         run: |
           mkdir build
