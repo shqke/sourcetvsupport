@@ -14,7 +14,7 @@ More information about SourceTV on wiki: https://developer.valvesoftware.com/wik
 
 Requirements
 ------
-- [MM:Source (preferably latest)](https://www.sourcemm.net/)
+- [MM:Source](https://www.sourcemm.net/)
 - [SourceMod (1.8+)](https://www.sourcemod.net/)
 
 Supported Games
