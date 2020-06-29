@@ -23,16 +23,16 @@ jobs:
   
         include:
           - sm_version: latest
-            sm_branch: master
+            branch: master
             
           - sm_version: "1.8"
-            sm_branch: "1.8-dev"
+            branch: "1.8-dev"
             
           - sm_version: "1.9"
-            sm_branch: "1.9-dev"
+            branch: "1.9-dev"
             
           - sm_version: "1.10"
-            sm_branch: "1.10-dev"
+            branch: "1.10-dev"
           
           - os: ubuntu-latest
             os_short: linux
@@ -74,7 +74,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: alliedmodders/sourcemod
-          ref: ${{ matrix.sm_branch }}
+          ref: ${{ matrix.branch }}
           path: sourcemod-${{ matrix.sm_version }}
           submodules: recursive
         
@@ -82,8 +82,8 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: alliedmodders/metamod-source
-          ref: master
-          path: metamod-latest
+          ref: ${{ matrix.branch }}
+          path: metamod-${{ matrix.sm_version }}
         
       - name: Checking out AMBuild
         uses: actions/checkout@v2
@@ -122,11 +122,11 @@ jobs:
         run: |
           mkdir build
           cd build
-          python ../configure.py --enable-optimize --sm-path="${{ github.workspace }}/sourcemod-${{ matrix.sm_version }}" --mms-path="${{ github.workspace }}/metamod-latest"
+          python ../configure.py --enable-optimize --sm-path="${{ github.workspace }}/sourcemod-${{ matrix.sm_version }}" --mms-path="${{ github.workspace }}/metamod-${{ matrix.sm_version }}"
           ambuild
         
       - name: Uploading package
         uses: actions/upload-artifact@v2
         with:
-          name: sourcetvsupport-sm-${{ matrix.sm_version }}-${{ matrix.os_short }}
+          name: sourcetvsupport-sm${{ matrix.sm_version }}-${{ matrix.os_short }}
           path: sourcetvsupport/build/package
