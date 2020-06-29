@@ -20,7 +20,7 @@
 //-----------------------------------------------------------------------------
 // Demo file 
 //-----------------------------------------------------------------------------
-class CDemoFile  
+class CDemoFile
 {
 public:
 	bool IsOpen()
@@ -28,7 +28,7 @@ public:
 		return m_Buffer.IsOpen();
 	}
 
-	void WriteRawData(const char *buffer, int length)
+	void WriteRawData(const char* buffer, int length)
 	{
 		m_Buffer.PutInt(length);
 		m_Buffer.Put(buffer, length);
@@ -41,7 +41,7 @@ public:
 		m_Buffer.PutUnsignedChar(playerSlot);
 	}
 
-	void WriteStringTables(bf_write *buf, int tick)
+	void WriteStringTables(bf_write* buf, int tick)
 	{
 		if (!IsOpen())
 		{
@@ -54,6 +54,19 @@ public:
 		WriteRawData((char*)buf->GetBasePointer(), buf->GetNumBytesWritten());
 	}
 
+	void WriteNetworkDataTables(bf_write* buf, int tick)
+	{
+		if (!IsOpen())
+		{
+			DevMsg("CDemoFile::WriteNetworkDataTables: Haven't opened file yet!\n");
+			return;
+		}
+
+		WriteCmdHeader(dem_datatables, tick, 0);
+
+		WriteRawData((char*)buf->GetBasePointer(), buf->GetNumBytesWritten());
+	}
+
 public:
 	char			m_szFileName[MAX_PATH];	//name of current demo file
 	demoheader_t    m_DemoHeader;  //general demo info
@@ -61,5 +74,7 @@ public:
 private:
 	CUtlStreamBuffer m_Buffer;
 };
+
+#define DEMO_RECORD_BUFFER_SIZE 2*1024*1024 // temp buffer big enough to fit both string tables and server classes
 
 #endif // DEMOFILE_H

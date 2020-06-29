@@ -7,22 +7,14 @@
 
 #include <sm_platform.h>
 #include <os/am-shared-library.h>
-
-// sm1.9- support
-#if !defined(PLATFORM_SEP)
-#if defined(PLATFORM_WINDOWS)
-#define PLATFORM_SEP			"\\"
-#else
-#define PLATFORM_SEP			"/"
-#endif
-#endif
+#include <os/am-path.h>
 
 #define CORE_L4D_FILE	"sourcetvsupport_mm.2.l4d." PLATFORM_LIB_EXT
 #define CORE_L4D2_FILE	"sourcetvsupport_mm.2.l4d2." PLATFORM_LIB_EXT
 
 ke::RefPtr<ke::SharedLib> g_CoreLibrary;
 
-METAMOD_PLUGIN *GetPluginInterface(const char *path)
+METAMOD_PLUGIN* GetPluginInterface(const char* path)
 {
 	char error[512];
 	ke::RefPtr<ke::SharedLib> sourcetvsupport = ke::SharedLib::Open(path, error, sizeof(error));
@@ -40,7 +32,7 @@ METAMOD_PLUGIN *GetPluginInterface(const char *path)
 	}
 
 	int ret;
-	METAMOD_PLUGIN *pl = reinterpret_cast<METAMOD_PLUGIN *>(ld(METAMOD_PLAPI_NAME, &ret));
+	METAMOD_PLUGIN* pl = reinterpret_cast<METAMOD_PLUGIN*>(ld(METAMOD_PLAPI_NAME, &ret));
 	if (pl == NULL) {
 		fprintf(stderr, PLUGIN_LOG_PREFIX "Unable to retrieve interface \"" METAMOD_PLAPI_NAME "\"\n");
 
@@ -52,7 +44,7 @@ METAMOD_PLUGIN *GetPluginInterface(const char *path)
 	return pl;
 }
 
-PLATFORM_EXTERN_C METAMOD_PLUGIN *CreateInterface_MMS(const MetamodVersionInfo *mvi, const MetamodLoaderInfo *mli)
+PLATFORM_EXTERN_C METAMOD_PLUGIN* CreateInterface_MMS(const MetamodVersionInfo* mvi, const MetamodLoaderInfo* mli)
 {
 	if (mvi->api_major != 2) {
 		fprintf(stderr, PLUGIN_LOG_PREFIX "Only MM:Source API v2 is supported\n");
@@ -60,14 +52,14 @@ PLATFORM_EXTERN_C METAMOD_PLUGIN *CreateInterface_MMS(const MetamodVersionInfo *
 		return NULL;
 	}
 
-	const char *file = NULL;
+	const char* file = NULL;
 	switch (mvi->source_engine) {
-		case SOURCE_ENGINE_LEFT4DEAD:
-			file = CORE_L4D_FILE;
-			break;
-		case SOURCE_ENGINE_LEFT4DEAD2:
-			file = CORE_L4D2_FILE;
-			break;
+	case SOURCE_ENGINE_LEFT4DEAD:
+		file = CORE_L4D_FILE;
+		break;
+	case SOURCE_ENGINE_LEFT4DEAD2:
+		file = CORE_L4D2_FILE;
+		break;
 	}
 
 	if (file == NULL) {
@@ -77,7 +69,7 @@ PLATFORM_EXTERN_C METAMOD_PLUGIN *CreateInterface_MMS(const MetamodVersionInfo *
 	}
 
 	char path[256];
-	snprintf(path, sizeof(path), "%s" PLATFORM_SEP "%s", mli->pl_path, file);
+	ke::path::Format(path, sizeof(path), "%s/%s", mli->pl_path, file);
 
 	return GetPluginInterface(path);
 }

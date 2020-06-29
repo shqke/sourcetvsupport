@@ -4,26 +4,31 @@
 #include "sdk/public/tier1/mempool.h"
 #include "sdk/engine/clientframe.h"
 
-IExtension *myself = NULL;
-ISourceMod *g_pSM = NULL;
-ISourceMod *smutils = NULL;
-IShareSys *sharesys = NULL;
+IExtension* myself = NULL;
+ISourceMod* g_pSM = NULL;
+ISourceMod* smutils = NULL;
+IShareSys* sharesys = NULL;
 
-IGameConfigManager *gameconfs = NULL;
-IPlayerManager *playerhelpers = NULL;
+IGameConfigManager* gameconfs = NULL;
+IPlayerManager* playerhelpers = NULL;
 
-ISDKTools *sdktools = NULL;
-IBinTools *bintools = NULL;
+ISDKTools* sdktools = NULL;
+IBinTools* bintools = NULL;
 
 // Cached instances
-IServer *sv = NULL;
-IHLTVServer *ihltv = NULL;
-IServer *hltv = NULL;
+IServer* sv = NULL;
+IHLTVServer* ihltv = NULL;
+IServer* hltv = NULL;
 
 // SourceHook
-SH_DECL_HOOK1_void(IHLTVDirector, SetHLTVServer, SH_NOATTRIB, 0, IHLTVServer *);
+SH_DECL_HOOK1_void(IHLTVDirector, SetHLTVServer, SH_NOATTRIB, 0, IHLTVServer*);
+SH_DECL_HOOK0_void(IDemoRecorder, RecordStringTables, SH_NOATTRIB, 0);
+SH_DECL_HOOK1_void(IDemoRecorder, RecordServerClasses, SH_NOATTRIB, 0, ServerClass*);
+SH_DECL_MANUALHOOK2_void(CBaseServer_ReplyChallenge, 0, 0, 0, netadr_s&, CBitRead&);
+SH_DECL_HOOK0(IServer, IsPausable, const, 0, bool);
+#if SOURCE_ENGINE != SE_LEFT4DEAD
 SH_DECL_HOOK0_void(ISteamGameServer, LogOff, SH_NOATTRIB, 0);
-SH_DECL_MANUALHOOK2_void(CBaseServer_ReplyChallenge, 0, 0, 0, netadr_s &, CBitRead &);
+#endif
 
 // Need this for demofile.h
 bool CUtlStreamBuffer::IsOpen() const
@@ -33,59 +38,12 @@ bool CUtlStreamBuffer::IsOpen() const
 
 // Detours
 
-// bug#2
-// insufficient buffer size on server (on client NET_MAX_PAYLOAD = 0x200000), overflowing it with stringtables data (starting at CHLTVDemoRecorder::RecordStringTables)
-// stringtables wont be saved properly, causing demo file to be corrupted
-DETOUR_DECL_MEMBER0(Handler_CHLTVDemoRecorder_RecordStringTables, void)
-{
-	CUtlBuffer buffer(0, 0, 0);
-	buffer.EnsureCapacity(NET_MAX_PAYLOAD);
-
-	bf_write buf("CDemoRecorder::RecordStringTables", buffer.Base(), NET_MAX_PAYLOAD);
-
-	int numTables = networkStringTableContainerServer->GetNumTables();
-	buf.WriteByte(numTables);
-	for (int i = 0; i < numTables; i++) {
-		INetworkStringTable *table = networkStringTableContainerServer->GetTable(i);
-		buf.WriteString(table->GetTableName());
-
-		int numstrings = table->GetNumStrings();
-		buf.WriteWord(numstrings);
-		for (int i = 0; i < numstrings; i++) {
-			buf.WriteString(table->GetString(i));
-			int userDataSize;
-			const void *pUserData = table->GetStringUserData(i, &userDataSize);
-			if (userDataSize > 0) {
-				buf.WriteOneBit(1);
-				buf.WriteShort(userDataSize);
-				buf.WriteBytes(pUserData, userDataSize);
-			}
-			else {
-				buf.WriteOneBit(0);
-			}
-		}
-
-		// No client side items on server
-		buf.WriteOneBit(0);
-	}
-
-	if (buf.IsOverflowed()) {
-		Warning("unable to record string tables\n");
-	}
-
-	CHLTVDemoRecorder *recorder = reinterpret_cast<CHLTVDemoRecorder *>(this);
-	CDemoFile *demo = recorder->GetDemoFile();
-
-	demo->WriteStringTables(&buf, recorder->GetRecordingTick());
-}
-
 // bug#X: hltv clients are sending "player_full_connect" event
 // user ids of hltv clients can collide with user ids of sv
 // event "player_full_connect" fires with userid of hltv client
 DETOUR_DECL_MEMBER0(Handler_CBaseClient_SendFullConnectEvent, void)
 {
-	CBaseClient *cl = reinterpret_cast<CBaseClient *>(this);
-	IServer *pServer = cl->GetServer();
+	const IServer* pServer = reinterpret_cast<CBaseClient*>(this)->GetServer();
 	if (pServer != NULL && pServer->IsHLTV()) {
 		// rww: progress in loading screen for hltv client
 		Msg(PLUGIN_LOG_PREFIX "CBaseClient::SendFullConnectEvent for HLTV client - ignoring\n");
@@ -98,7 +56,7 @@ DETOUR_DECL_MEMBER0(Handler_CBaseClient_SendFullConnectEvent, void)
 
 DETOUR_DECL_MEMBER0(Handler_CBaseServer_IsExclusiveToLobbyConnections, bool)
 {
-	IServer *pServer = reinterpret_cast<IServer *>(this);
+	const IServer* pServer = reinterpret_cast<IServer*>(this);
 	if (pServer->IsHLTV()) {
 		return false;
 	}
@@ -106,11 +64,11 @@ DETOUR_DECL_MEMBER0(Handler_CBaseServer_IsExclusiveToLobbyConnections, bool)
 	return DETOUR_MEMBER_CALL(Handler_CBaseServer_IsExclusiveToLobbyConnections)();
 }
 
-DETOUR_DECL_MEMBER1(Handler_CHLTVServer_AddNewFrame, CClientFrame *, CClientFrame *, clientFrame)
+DETOUR_DECL_MEMBER1(Handler_CHLTVServer_AddNewFrame, CClientFrame*, CClientFrame*, clientFrame)
 {
 	// bug##: hibernation causes to leak memory when adding new frames to hltv
 	// forcefully remove oldest frames
-	CClientFrame *pRet = DETOUR_MEMBER_CALL(Handler_CHLTVServer_AddNewFrame)(clientFrame);
+	CClientFrame* pRet = DETOUR_MEMBER_CALL(Handler_CHLTVServer_AddNewFrame)(clientFrame);
 
 	// Only keep the number of packets required to satisfy tv_delay at our tv snapshot rate
 	static ConVarRef tv_delay("tv_delay"), tv_snapshotrate("tv_snapshotrate");
@@ -120,7 +78,7 @@ DETOUR_DECL_MEMBER1(Handler_CHLTVServer_AddNewFrame, CClientFrame *, CClientFram
 		numFramesToKeep = MAX_CLIENT_FRAMES;
 	}
 
-	auto &hltvFrameManager = smext->ref_CClientFrameManager(reinterpret_cast<CHLTVServer *>(this));
+	CClientFrameManager& hltvFrameManager = smext->ref_CClientFrameManager_from_CHLTVServer(this);
 
 	int nClientFrameCount = hltvFrameManager.CountClientFrames();
 	while (nClientFrameCount > numFramesToKeep) {
@@ -133,7 +91,7 @@ DETOUR_DECL_MEMBER1(Handler_CHLTVServer_AddNewFrame, CClientFrame *, CClientFram
 
 // bug#8: ticket auth (authprotocol = 2) with hltv clients crashes server in steamclient.so on disconnect
 // wrong steamid of unauthentificated hltv client passed to CSteamGameServer012::EndAuthSession
-DETOUR_DECL_MEMBER1(Handler_CSteam3Server_NotifyClientDisconnect, void, CBaseClient *, client)
+DETOUR_DECL_MEMBER1(Handler_CSteam3Server_NotifyClientDisconnect, void, CBaseClient*, client)
 {
 	if (!client->IsConnected() || client->IsFakeClient()) {
 		return;
@@ -146,7 +104,8 @@ DETOUR_DECL_MEMBER1(Handler_CSteam3Server_NotifyClientDisconnect, void, CBaseCli
 	return DETOUR_MEMBER_CALL(Handler_CSteam3Server_NotifyClientDisconnect)(client);
 }
 
-DETOUR_DECL_STATIC6(Handler_SteamInternal_GameServer_Init, bool, uint32, unIP, uint16, usPort, uint16, usGamePort, uint16, usQueryPort, EServerMode, eServerMode, const char *, pchVersionString)
+#if SOURCE_ENGINE != SE_LEFT4DEAD
+DETOUR_DECL_STATIC6(Handler_SteamInternal_GameServer_Init, bool, uint32, unIP, uint16, usPort, uint16, usGamePort, uint16, usQueryPort, EServerMode, eServerMode, const char*, pchVersionString)
 {
 	// bug##: without overriding usQueryPort parm, it uses HLTV port (if having -hltv in launch parameters), which is already bound
 	// failing SteamInternal_GameServer_Init also causes game to freeze
@@ -161,6 +120,7 @@ DETOUR_DECL_STATIC6(Handler_SteamInternal_GameServer_Init, bool, uint32, unIP, u
 
 	return true;
 }
+#endif
 
 DETOUR_DECL_STATIC0(Handler_SteamGameServer_Shutdown, void)
 {
@@ -175,13 +135,18 @@ SMExtension::SMExtension()
 {
 	m_bIsLoaded = false;
 
+	shookid_CBaseServer_ReplyChallenge = 0;
+	shookid_SteamGameServer_LogOff = 0;
+	shookid_IServer_IsPausable = 0;
+	shookid_IDemoRecorder_RecordStringTables = 0;
+	shookid_IDemoRecorder_RecordServerClasses = 0;
+
 	vcall_CBaseServer_GetChallengeNr = NULL;
 	vcall_CBaseServer_GetChallengeType = NULL;
 
 	detour_SteamInternal_GameServer_Init = NULL;
 	detour_SteamGameServer_Shutdown = NULL;
 
-	detour_CHLTVDemoRecorder_RecordStringTables = NULL;
 	detour_CBaseServer_IsExclusiveToLobbyConnections = NULL;
 	detour_CBaseClient_SendFullConnectEvent = NULL;
 	detour_CSteam3Server_NotifyClientDisconnect = NULL;
@@ -200,14 +165,14 @@ void SMExtension::Load()
 		return;
 	}
 
-	// sm1.9- support
 	SourceMod::PassInfo params[] = {
 #if SMINTERFACE_BINTOOLS_VERSION == 4
 		{ PassType_Basic, PASSFLAG_BYVAL, sizeof(int), NULL, 0 },
-		{ PassType_Basic, PASSFLAG_BYVAL, sizeof(netadr_t *), NULL, 0 },
+		{ PassType_Basic, PASSFLAG_BYVAL, sizeof(netadr_t*), NULL, 0 },
 #else
+		// sm1.9- support
 		{ PassType_Basic, PASSFLAG_BYVAL, sizeof(int) },
-		{ PassType_Basic, PASSFLAG_BYVAL, sizeof(netadr_t *) },
+		{ PassType_Basic, PASSFLAG_BYVAL, sizeof(netadr_t*) },
 #endif
 	};
 
@@ -221,15 +186,19 @@ void SMExtension::Load()
 		smutils->LogError(myself, "Unable to create ICallWrapper for \"CBaseServer::GetChallengeType\"!");
 	}
 
+#if SOURCE_ENGINE != SE_LEFT4DEAD
 	detour_SteamInternal_GameServer_Init->EnableDetour();
 	detour_SteamGameServer_Shutdown->EnableDetour();
-
-	detour_CHLTVDemoRecorder_RecordStringTables->EnableDetour();
-	detour_CBaseServer_IsExclusiveToLobbyConnections->EnableDetour();
 	detour_CBaseClient_SendFullConnectEvent->EnableDetour();
+#endif
+
+	detour_CBaseServer_IsExclusiveToLobbyConnections->EnableDetour();
 	detour_CSteam3Server_NotifyClientDisconnect->EnableDetour();
 	detour_CHLTVServer_AddNewFrame->EnableDetour();
 
+#if SOURCE_ENGINE == SE_LEFT4DEAD
+	shookid_IServer_IsPausable = SH_ADD_HOOK(IServer, IsPausable, sv, SH_MEMBER(this, &SMExtension::Handler_IServer_IsPausable), true);
+#endif
 	SH_ADD_HOOK(IHLTVDirector, SetHLTVServer, hltvdirector, SH_MEMBER(this, &SMExtension::Handler_IHLTVDirector_SetHLTVServer), true);
 
 	OnSetHLTVServer(hltvdirector->GetHLTVServer());
@@ -260,11 +229,6 @@ void SMExtension::Unload()
 		detour_SteamGameServer_Shutdown = NULL;
 	}
 
-	if (detour_CHLTVDemoRecorder_RecordStringTables != NULL) {
-		detour_CHLTVDemoRecorder_RecordStringTables->Destroy();
-		detour_CHLTVDemoRecorder_RecordStringTables = NULL;
-	}
-
 	if (detour_CBaseServer_IsExclusiveToLobbyConnections != NULL) {
 		detour_CBaseServer_IsExclusiveToLobbyConnections->Destroy();
 		detour_CBaseServer_IsExclusiveToLobbyConnections = NULL;
@@ -292,11 +256,15 @@ void SMExtension::Unload()
 
 	m_bIsLoaded = false;
 
+	SH_REMOVE_HOOK_ID(shookid_IServer_IsPausable);
+	shookid_IServer_IsPausable = 0;
+
 	myself = NULL;
 }
 
-bool SMExtension::CreateDetours(char *error, size_t maxlength)
+bool SMExtension::CreateDetours(char* error, size_t maxlength)
 {
+#if SOURCE_ENGINE != SE_LEFT4DEAD
 	detour_SteamInternal_GameServer_Init = DETOUR_CREATE_STATIC(Handler_SteamInternal_GameServer_Init, pfn_SteamInternal_GameServer_Init);
 	if (detour_SteamInternal_GameServer_Init == NULL) {
 		V_strncpy(error, "Unable to create a detour for \"SteamInternal_GameServer_Init\"", maxlength);
@@ -311,23 +279,17 @@ bool SMExtension::CreateDetours(char *error, size_t maxlength)
 		return false;
 	}
 
-	detour_CHLTVDemoRecorder_RecordStringTables = DETOUR_CREATE_MEMBER(Handler_CHLTVDemoRecorder_RecordStringTables, pfn_CHLTVDemoRecorder_RecordStringTables);
-	if (detour_CHLTVDemoRecorder_RecordStringTables == NULL) {
-		V_strncpy(error, "Unable to create a detour for \"CHLTVDemoRecorder::RecordStringTables\"", maxlength);
+	detour_CBaseClient_SendFullConnectEvent = DETOUR_CREATE_MEMBER(Handler_CBaseClient_SendFullConnectEvent, pfn_CBaseClient_SendFullConnectEvent);
+	if (detour_CBaseClient_SendFullConnectEvent == NULL) {
+		V_strncpy(error, "Unable to create a detour for \"CBaseClient::SendFullConnectEvent\"", maxlength);
 
 		return false;
 	}
+#endif
 
 	detour_CBaseServer_IsExclusiveToLobbyConnections = DETOUR_CREATE_MEMBER(Handler_CBaseServer_IsExclusiveToLobbyConnections, pfn_CBaseServer_IsExclusiveToLobbyConnections);
 	if (detour_CBaseServer_IsExclusiveToLobbyConnections == NULL) {
 		V_strncpy(error, "Unable to create a detour for \"CBaseServer::IsExclusiveToLobbyConnections\"", maxlength);
-
-		return false;
-	}
-
-	detour_CBaseClient_SendFullConnectEvent = DETOUR_CREATE_MEMBER(Handler_CBaseClient_SendFullConnectEvent, pfn_CBaseClient_SendFullConnectEvent);
-	if (detour_CBaseClient_SendFullConnectEvent == NULL) {
-		V_strncpy(error, "Unable to create a detour for \"CBaseClient::SendFullConnectEvent\"", maxlength);
 
 		return false;
 	}
@@ -351,26 +313,27 @@ bool SMExtension::CreateDetours(char *error, size_t maxlength)
 
 void SMExtension::OnGameServer_Init()
 {
-	// rww: handle errors on early load
 	OnGameServer_Shutdown();
 
+#if SOURCE_ENGINE != SE_LEFT4DEAD
 	HSteamPipe hSteamPipe = InvokeGetHSteamPipe();
 	if (hSteamPipe == 0) {
 		return;
 	}
 
-	ISteamClient *pSteamClient = static_cast<ISteamClient *>(InvokeCreateInterface(STEAMCLIENT_INTERFACE_VERSION));
+	ISteamClient* pSteamClient = static_cast<ISteamClient*>(InvokeCreateInterface(STEAMCLIENT_INTERFACE_VERSION));
 	if (pSteamClient == NULL) {
 		return;
 	}
 
-	HSteamUser hSteamUser = InvokeGetHSteamPipe();
-	ISteamGameServer *pSteamGameServer = pSteamClient->GetISteamGameServer(hSteamUser, hSteamPipe, STEAMGAMESERVER_INTERFACE_VERSION);
+	HSteamUser hSteamUser = InvokeGetHSteamUser();
+	ISteamGameServer* pSteamGameServer = pSteamClient->GetISteamGameServer(hSteamUser, hSteamPipe, STEAMGAMESERVER_INTERFACE_VERSION);
 	if (pSteamGameServer == NULL) {
 		return;
 	}
 
 	shookid_SteamGameServer_LogOff = SH_ADD_HOOK(ISteamGameServer, LogOff, pSteamGameServer, SH_MEMBER(this, &SMExtension::Handler_ISteamGameServer_LogOff), false);
+#endif
 }
 
 void SMExtension::OnGameServer_Shutdown()
@@ -379,17 +342,22 @@ void SMExtension::OnGameServer_Shutdown()
 	shookid_SteamGameServer_LogOff = 0;
 }
 
-void SMExtension::OnSetHLTVServer(IHLTVServer *pHLTVServer)
+void SMExtension::OnSetHLTVServer(IHLTVServer* pHLTVServer)
 {
 	if (pHLTVServer != ihltv) {
 		ihltv = pHLTVServer;
 
-		// Remove old hook
 		SH_REMOVE_HOOK_ID(shookid_CBaseServer_ReplyChallenge);
 		shookid_CBaseServer_ReplyChallenge = 0;
 
+		SH_REMOVE_HOOK_ID(shookid_IDemoRecorder_RecordStringTables);
+		shookid_IDemoRecorder_RecordStringTables = 0;
+
+		SH_REMOVE_HOOK_ID(shookid_IDemoRecorder_RecordServerClasses);
+		shookid_IDemoRecorder_RecordServerClasses = 0;
+
 		hltv = NULL;
-		if (ihltv != NULL) {
+		if (pHLTVServer != NULL) {
 			hltv = pHLTVServer->GetBaseServer();
 			if (hltv != NULL) {
 				shookid_CBaseServer_ReplyChallenge = SH_ADD_MANUALVPHOOK(CBaseServer_ReplyChallenge, hltv, SH_MEMBER(this, &SMExtension::Handler_CBaseServer_ReplyChallenge), false);
@@ -398,13 +366,17 @@ void SMExtension::OnSetHLTVServer(IHLTVServer *pHLTVServer)
 	}
 
 	if (hltv != NULL) {
+		IDemoRecorder* recorder = ptr_m_DemoRecorder_from_IHLTVServer(ihltv)->GetDemoRecorder();
+		shookid_IDemoRecorder_RecordStringTables = SH_ADD_HOOK(IDemoRecorder, RecordStringTables, recorder, SH_MEMBER(this, &SMExtension::Handler_IDemoRecorder_RecordStringTables), false);
+		shookid_IDemoRecorder_RecordServerClasses = SH_ADD_HOOK(IDemoRecorder, RecordServerClasses, recorder, SH_MEMBER(this, &SMExtension::Handler_IDemoRecorder_RecordServerClasses), false);
+
 		// bug##: in CHLTVServer::StartMaster, bot is executing "spectate" command which does nothing and it keeps him in unassigned team (index 0)
 		// bot's going to fall under CDirectorSessionManager::UpdateNewPlayers's conditions to be auto-assigned to some playable team
 		// enforce team change here to spectator (index 1)
-		IGamePlayer *pl = playerhelpers->GetGamePlayer(ihltv->GetHLTVSlot() + 1);
+		IGamePlayer* pl = playerhelpers->GetGamePlayer(pHLTVServer->GetHLTVSlot() + 1);
 		if (pl != NULL && pl->IsSourceTV()) {
-			IPlayerInfo *plInfo = pl->GetPlayerInfo();
-			if (plInfo->GetTeamIndex() != TEAM_SPECTATOR) {
+			IPlayerInfo* plInfo = pl->GetPlayerInfo();
+			if (plInfo != NULL && plInfo->GetTeamIndex() != TEAM_SPECTATOR) {
 				Msg(PLUGIN_LOG_PREFIX "Moving \"%s\" to spectators team\n", pl->GetName());
 
 				plInfo->ChangeTeam(TEAM_SPECTATOR);
@@ -414,15 +386,15 @@ void SMExtension::OnSetHLTVServer(IHLTVServer *pHLTVServer)
 		// bug#1: stringTableCRC are not set in CHLTVServer::StartMaster
 		// client doesn't allow stringTableCRC to be empty
 		// hltv instance must copy property stringTableCRC from sv instance
-		ref_stringTableCRC(hltv) = ref_stringTableCRC(sv);
+		ref_stringTableCRC_from_CBaseServer(hltv) = ref_stringTableCRC_from_CBaseServer(sv);
 	}
 }
 
-int SMExtension::GetChallengeNr(IServer *pServer, netadr_t &adr)
+int SMExtension::GetChallengeNr(IServer* pServer, netadr_t& adr)
 {
 	struct {
-		IServer *pServer;
-		netadr_s *adr;
+		IServer* pServer;
+		netadr_s* adr;
 	} stack{ pServer, &adr };
 
 	int ret;
@@ -431,11 +403,11 @@ int SMExtension::GetChallengeNr(IServer *pServer, netadr_t &adr)
 	return ret;
 }
 
-int SMExtension::GetChallengeType(IServer *pServer, netadr_t &adr)
+int SMExtension::GetChallengeType(IServer* pServer, netadr_t& adr)
 {
 	struct {
-		IServer *pServer;
-		netadr_s *adr;
+		IServer* pServer;
+		netadr_s* adr;
 	} stack{ pServer, &adr };
 
 	int ret;
@@ -444,14 +416,79 @@ int SMExtension::GetChallengeType(IServer *pServer, netadr_t &adr)
 	return ret;
 }
 
-void SMExtension::Handler_IHLTVDirector_SetHLTVServer(IHLTVServer *pHLTVServer)
+void SMExtension::Handler_IHLTVDirector_SetHLTVServer(IHLTVServer* pHLTVServer)
 {
 	OnSetHLTVServer(pHLTVServer);
 }
 
-void SMExtension::Handler_CBaseServer_ReplyChallenge(netadr_s &adr, CBitRead &inmsg)
+void SMExtension::Handler_IDemoRecorder_RecordStringTables()
 {
-	IServer *pServer = META_IFACEPTR(IServer);
+	// bug#2
+	// insufficient buffer size in CHLTVDemoRecorder::RecordStringTables, overflowing it with stringtables data (starting at CHLTVDemoRecorder::RecordStringTables)
+	// stringtables wont be saved properly, causing demo file to be corrupted
+	static byte s_buffer[DEMO_RECORD_BUFFER_SIZE];
+	bf_write buf(s_buffer, sizeof(s_buffer));
+
+	int numTables = networkStringTableContainerServer->GetNumTables();
+	buf.WriteByte(numTables);
+	for (int i = 0; i < numTables; i++) {
+		INetworkStringTable* table = networkStringTableContainerServer->GetTable(i);
+		buf.WriteString(table->GetTableName());
+
+		int numstrings = table->GetNumStrings();
+		buf.WriteWord(numstrings);
+		for (int j = 0; j < numstrings; j++) {
+			buf.WriteString(table->GetString(j));
+			int userDataSize;
+			const void* pUserData = table->GetStringUserData(j, &userDataSize);
+			if (userDataSize > 0) {
+				buf.WriteOneBit(1);
+				buf.WriteShort(userDataSize);
+				buf.WriteBytes(pUserData, userDataSize);
+			}
+			else {
+				buf.WriteOneBit(0);
+			}
+		}
+
+		// No client side items on server
+		buf.WriteOneBit(0);
+	}
+
+	if (buf.IsOverflowed()) {
+		Warning("unable to record string tables\n");
+	}
+
+	IDemoRecorder* recorder = META_IFACEPTR(IDemoRecorder);
+	recorder->GetDemoFile()->WriteStringTables(&buf, recorder->GetRecordingTick());
+
+	RETURN_META(MRES_SUPERCEDE);
+}
+
+void SMExtension::Handler_IDemoRecorder_RecordServerClasses(ServerClass* pClasses)
+{
+	static byte s_buffer[DEMO_RECORD_BUFFER_SIZE];
+	bf_write buf(s_buffer, sizeof(s_buffer));
+
+	// Send SendTable info.
+	InvokeDataTable_WriteSendTablesBuffer(pClasses, &buf);
+
+	// Send class descriptions.
+	InvokeDataTable_WriteClassInfosBuffer(pClasses, &buf);
+
+	if (buf.IsOverflowed()) {
+		Warning("unable to record server classes\n");
+	}
+
+	IDemoRecorder* recorder = META_IFACEPTR(IDemoRecorder);
+	recorder->GetDemoFile()->WriteNetworkDataTables(&buf, recorder->GetRecordingTick());
+
+	RETURN_META(MRES_SUPERCEDE);
+}
+
+void SMExtension::Handler_CBaseServer_ReplyChallenge(netadr_s& adr, CBitRead& inmsg)
+{
+	IServer* pServer = META_IFACEPTR(IServer);
 	if (!pServer->IsHLTV()) {
 		RETURN_META(MRES_IGNORED);
 	}
@@ -501,7 +538,7 @@ void SMExtension::Handler_CBaseServer_ReplyChallenge(netadr_s &adr, CBitRead &in
 // as long as sv instance is still active - prevent ISteamGameServer::LogOff from being invoked
 void SMExtension::Handler_ISteamGameServer_LogOff()
 {
-	// rww: look up importance of CMaster::ShutdownConnection, same thing happens
+	// rww: look up importance of CMaster::ShutdownConnection
 	if (sv != NULL && sv->IsActive()) {
 		Msg(PLUGIN_LOG_PREFIX "Game server still active - ignoring ISteamGameServer::LogOff\n");
 
@@ -511,7 +548,15 @@ void SMExtension::Handler_ISteamGameServer_LogOff()
 	RETURN_META(MRES_IGNORED);
 }
 
-bool SMExtension::OnExtensionLoad(IExtension *me, IShareSys *sys, char *error, size_t maxlength, bool late)
+bool SMExtension::Handler_IServer_IsPausable() const
+{
+	SET_META_RESULT(MRES_SUPERCEDE);
+
+	static ConVarRef sv_pausable("sv_pausable");
+	return sv_pausable.GetBool();
+}
+
+bool SMExtension::OnExtensionLoad(IExtension* me, IShareSys* sys, char* error, size_t maxlength, bool late)
 {
 	sharesys = sys;
 	myself = me;
@@ -524,7 +569,7 @@ bool SMExtension::OnExtensionLoad(IExtension *me, IShareSys *sys, char *error, s
 	// Game config is never used by detour class to handle errors ourselves
 	CDetourManager::Init(smutils->GetScriptingEngine(), NULL);
 
-	IGameConfig *gc = NULL;
+	IGameConfig* gc = NULL;
 	if (!gameconfs->LoadGameConfigFile(GAMEDATA_FILE, &gc, error, maxlength)) {
 		V_strncpy(error, "Unable to load a gamedata file \"" GAMEDATA_FILE ".txt\"", maxlength);
 
@@ -571,17 +616,17 @@ void SMExtension::OnExtensionsAllLoaded()
 	}
 }
 
-bool SMExtension::QueryInterfaceDrop(SMInterface *pInterface)
+bool SMExtension::QueryInterfaceDrop(SMInterface* pInterface)
 {
 	return pInterface != bintools && pInterface != sdktools;
 }
 
-void SMExtension::NotifyInterfaceDrop(SMInterface *pInterface)
+void SMExtension::NotifyInterfaceDrop(SMInterface* pInterface)
 {
 	OnExtensionUnload();
 }
 
-bool SMExtension::QueryRunning(char *error, size_t maxlength)
+bool SMExtension::QueryRunning(char* error, size_t maxlength)
 {
 	SM_CHECK_IFACE(SDKTOOLS, sdktools);
 	SM_CHECK_IFACE(BINTOOLS, bintools);

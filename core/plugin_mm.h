@@ -31,16 +31,18 @@ bug##: doors not visible with tv_transmitall 0
 bug##: some models stuck midair (helicopter c8m1 post intro)
 
 bug##: avatars aren't shown in demos
+
+bug##: hltv sends no update for clients
 */
 
-class MMSPlugin:
+class MMSPlugin :
 	public SMExtension,
 	public ISmmPlugin,
 	public IMetamodListener,
 	public IConCommandBaseAccessor
 {
 private:
-	bool LoadSMExtension(char *error, int maxlength);
+	bool LoadSMExtension(char* error, int maxlength);
 	void BindToSourceMod();
 
 public: // ISmmPlugin
@@ -62,7 +64,7 @@ public: // ISmmPlugin
 	* @param late		Set to true if your plugin was loaded late (not at server load).
 	* @return			True if successful, return false to reject the load.
 	*/
-	virtual bool Load(PluginId id, ISmmAPI * ismm, char * error, size_t maxlength, bool late);
+	bool Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlength, bool late) override;
 
 	/**
 	* @brief Called on plugin unload.  You can return false if you know
@@ -72,7 +74,7 @@ public: // ISmmPlugin
 	* @param maxlen	Size of error message buffer
 	* @return			True on success, return false to request no unload.
 	*/
-	virtual bool Unload(char *error, size_t maxlen);
+	bool Unload(char* error, size_t maxlen) override;
 
 	/**
 	* @brief Called when all plugins have been loaded.
@@ -81,31 +83,55 @@ public: // ISmmPlugin
 	* It is also safe to assume that all other (automatically loaded) plugins are now
 	* ready to start interacting, because they are all loaded.
 	*/
-	virtual void AllPluginsLoaded();
+	void AllPluginsLoaded() override;
 
 	/** @brief Return author as string */
-	virtual const char *GetAuthor() { return GetExtensionAuthor(); }
+	const char* GetAuthor() override
+	{
+		return CONF_AUTHOR;
+	}
 
 	/** @brief Return plugin name as string */
-	virtual const char *GetName() { return GetExtensionName(); }
+	const char* GetName() override
+	{
+		return CONF_NAME;
+	}
 
 	/** @brief Return a description as string */
-	virtual const char *GetDescription() { return GetExtensionDescription(); }
+	const char* GetDescription() override
+	{
+		return CONF_DESCRIPTION;
+	}
 
 	/** @brief Return a URL as string */
-	virtual const char *GetURL() { return GetExtensionURL(); }
+	const char* GetURL() override
+	{
+		return CONF_URL;
+	}
 
 	/** @brief Return quick license code as string */
-	virtual const char *GetLicense() { return CONF_LICENSE; }
+	const char* GetLicense() override
+	{
+		return CONF_LICENSE;
+	}
 
 	/** @brief Return version as string */
-	virtual const char *GetVersion() { return GetExtensionVerString(); }
+	const char* GetVersion() override
+	{
+		return CONF_VERSION;
+	}
 
 	/** @brief Return author as string */
-	virtual const char *GetDate() { return GetExtensionDateString(); }
+	const char* GetDate() override
+	{
+		return CONF_DATESTRING;
+	}
 
 	/** @brief Return author as string */
-	virtual const char *GetLogTag() { return GetExtensionTag(); }
+	const char* GetLogTag() override
+	{
+		return CONF_LOGTAG;
+	}
 
 public: // IMetamodListener
 	/**
@@ -119,12 +145,12 @@ public: // IMetamodListener
 	* @return				Generic pointer to the interface, or NULL if not
 	* 						found.
 	*/
-	virtual void *OnMetamodQuery(const char *iface, int *ret);
+	void* OnMetamodQuery(const char* iface, int* ret) override;
 
 public: // IConCommandBaseAccessor
 	// Flags is a combination of FCVAR flags in cvar.h.
 	// hOut is filled in with a handle to the variable.
-	virtual bool RegisterConCommandBase(ConCommandBase *pVar);
+	bool RegisterConCommandBase(ConCommandBase* pVar) override;
 };
 
 #endif

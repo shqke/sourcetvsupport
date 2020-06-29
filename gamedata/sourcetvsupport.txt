@@ -1,37 +1,31 @@
 "Games"
 {
-	"left4dead2"
+	"#default"
 	{
 		"Offsets"
 		{
 			"CBaseServer::stringTableCRC"
 			{
-				"linux" "184"
-				"windows" "184"
-			}
-			
-			"CBaseServer::GetChallengeNr"
-			{
-				"linux" "54"
-				"windows" "55"
-			}
-
-			"CBaseServer::GetChallengeType"
-			{
-				"linux" "55"
-				"windows" "56"
-			}
-
-			"CBaseServer::ReplyChallenge"
-			{
-				"linux" "60"
-				"windows" "61"
+				"linux"		"184"
+				"windows"	"184"
 			}
 
 			"CHLTVServer::CClientFrameManager"
 			{
-				"linux" "460"
-				"windows" "472"
+				"linux"		"460"
+				"windows"	"472"
+			}
+
+			"CHLTVServer::IHLTVServer"
+			{
+				"linux"		"516"
+				"windows"	"528"
+			}
+
+			"CHLTVServer::m_DemoRecorder"
+			{
+				"linux"		"19460"
+				"windows"	"19504"
 			}
 		}
 		
@@ -41,42 +35,197 @@
 			{
 				"library"	"engine"
 				"linux"		"@_ZN17CHLTVDemoRecorder18RecordStringTablesEv"
-				"windows"	"\x55\x8B\xEC\xB8\x1C\x00\x04\x00"
+			}
+			
+			"CHLTVDemoRecorder::RecordServerClasses"
+			{
+				"library"	"engine"
+				"linux"		"@_ZN17CHLTVDemoRecorder19RecordServerClassesEP11ServerClass"
+			}
+			
+			"DataTable_WriteSendTablesBuffer"
+			{
+				"library"	"engine"
+				"linux"		"@_Z31DataTable_WriteSendTablesBufferP11ServerClassP8bf_write"
+			}
+			
+			"DataTable_WriteClassInfosBuffer"
+			{
+				"library"	"engine"
+				"linux"		"@_Z31DataTable_WriteClassInfosBufferP11ServerClassP8bf_write"
 			}
 			
 			"CBaseServer::IsExclusiveToLobbyConnections"
 			{
 				"library"	"engine"
 				"linux"		"@_ZNK11CBaseServer29IsExclusiveToLobbyConnectionsEv"
-				"windows"	"\x8B\x01\x8B\x50\x5C\xFF\xD2\x84\xC0"
 			}
 
 			"CSteam3Server::NotifyClientDisconnect"
 			{
 				"library"	"engine"
 				"linux"		"@_ZN13CSteam3Server22NotifyClientDisconnectEP11CBaseClient"
-				"windows"	"\x55\x8B\xEC\x83\xEC\x1C\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x53\x56\x8B\x75\x08"
 			}
 			
 			"CBaseClient::SendFullConnectEvent"
 			{
 				"library"	"engine"
 				"linux"		"@_ZN11CBaseClient20SendFullConnectEventEv"
-				"windows"	"\x56\x57\x8B\xF9\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x01\x8B\x50\x18"
-			}
-			
-			"CFrameSnapshotManager::LevelChanged"
-			{
-				"library"	"engine"
-				"linux"		"@_ZN21CFrameSnapshotManager12LevelChangedEv"
-				// 56 8B F1 8D 4E 58 
-				"windows"	"\x56\x8B\xF1\x8D\x4E\x58"
 			}
 			
 			"CHLTVServer::AddNewFrame"
 			{
 				"library"	"engine"
 				"linux"		"@_ZN11CHLTVServer11AddNewFrameEP12CClientFrame"
+			}
+		}
+	}
+
+	"left4dead"
+	{
+		"Offsets"
+		{
+			"CBaseServer::GetChallengeNr"
+			{
+				"linux"		"52"
+				"windows"	"53"
+			}
+
+			"CBaseServer::GetChallengeType"
+			{
+				"linux"		"53"
+				"windows"	"54"
+			}
+
+			"CBaseServer::ReplyChallenge"
+			{
+				"linux"		"58"
+				"windows"	"59"
+			}
+		}
+		
+		"Signatures"
+		{
+			"DataTable_WriteSendTablesBuffer"
+			{
+				// Locate CDemoRecorder::RecordServerClasses by string "CDemoRecorder::RecordServerClasses"
+				// Next call in CHLTVDemoRecorder::RecordServerClasses that takes 2 arguments
+				"library"	"engine"
+				// 53 56 57 8B 7C 24 10 57 E8 ? ? ? ? 8B 74 24 18
+				"windows"	"\x53\x56\x57\x8B\x7C\x24\x10\x57\xE8\x2A\x2A\x2A\x2A\x8B\x74\x24\x18"
+			}
+			
+			"DataTable_WriteClassInfosBuffer"
+			{
+				// Next call in CHLTVDemoRecorder::RecordServerClasses after DataTable_WriteSendTablesBuffer
+				"library"	"engine"
+				// 56 8B 74 24 08 33 C9 85 F6
+				"windows"	"\x56\x8B\x74\x24\x08\x33\xC9\x85\xF6"
+			}
+			
+			"CBaseServer::IsExclusiveToLobbyConnections"
+			{
+				"library"	"engine"
+				// 8B 01 8B 50 58 FF D2 84 C0
+				"windows"	"\x8B\x01\x8B\x50\x58\xFF\xD2\x84\xC0"
+			}
+
+			"CSteam3Server::NotifyClientDisconnect"
+			{
+				"library"	"engine"
+				// Locate CBaseClient::PerformDisconnection by string "Dropped %s from server (%s)"
+				// First call that takes 2 arguments
+				// 83 EC 18 53 8B 5C 24 20 85 DB
+				"windows"	"\x83\xEC\x18\x53\x8B\x5C\x24\x20\x85\xDB"
+			}
+			
+			// unused
+			"CBaseClient::SendFullConnectEvent"
+			{
+				"library"	"engine"
+				"windows"	""
+			}
+			
+			"CHLTVServer::AddNewFrame"
+			{
+				"library"	"engine"
+				// xref to string "CHLTVServer::AddNewFrame"
+				// 53 55 56 57 6A 04 6A 00 68 ? ? ? ? 6A 00 8B F1
+				"windows"	"\x53\x55\x56\x57\x6A\x04\x6A\x00\x68\x2A\x2A\x2A\x2A\x6A\x00\x8B\xF1"
+			}
+		}
+	}
+
+	"left4dead2"
+	{
+		"Offsets"
+		{
+			"CBaseServer::GetChallengeNr"
+			{
+				"linux"		"54"
+				"windows"	"55"
+			}
+
+			"CBaseServer::GetChallengeType"
+			{
+				"linux"		"55"
+				"windows"	"56"
+			}
+
+			"CBaseServer::ReplyChallenge"
+			{
+				"linux"		"60"
+				"windows"	"61"
+			}
+		}
+		
+		"Signatures"
+		{
+			"DataTable_WriteSendTablesBuffer"
+			{
+				// Locate CDemoRecorder::RecordServerClasses by string "CDemoRecorder::RecordServerClasses"
+				// Next call in CHLTVDemoRecorder::RecordServerClasses that takes 2 arguments
+				"library"	"engine"
+				// 55 8B EC 53 8B 5D 08 56 57 53 E8 ? ? ? ? 8B 75 0C
+				"windows"	"\x55\x8B\xEC\x53\x8B\x5D\x08\x56\x57\x53\xE8\x2A\x2A\x2A\x2A\x8B\x75\x0C"
+			}
+			
+			"DataTable_WriteClassInfosBuffer"
+			{
+				// Next call in CHLTVDemoRecorder::RecordServerClasses after DataTable_WriteSendTablesBuffer
+				"library"	"engine"
+				// 55 8B EC 56 8B 75 08 33 C9
+				"windows"	"\x55\x8B\xEC\x56\x8B\x75\x08\x33\xC9"
+			}
+			
+			"CBaseServer::IsExclusiveToLobbyConnections"
+			{
+				"library"	"engine"
+				// 8B 01 8B 50 5C FF D2 84 C0
+				"windows"	"\x8B\x01\x8B\x50\x5C\xFF\xD2\x84\xC0"
+			}
+
+			"CSteam3Server::NotifyClientDisconnect"
+			{
+				"library"	"engine"
+				// Locate CBaseClient::PerformDisconnection by string "Dropped %s from server (%s)"
+				// First call that takes 2 arguments
+				// 55 8B EC 83 EC 1C A1 ? ? ? ? 33 C5 89 45 FC 53 56 8B 75 08
+				"windows"	"\x55\x8B\xEC\x83\xEC\x1C\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x53\x56\x8B\x75\x08"
+			}
+			
+			"CBaseClient::SendFullConnectEvent"
+			{
+				"library"	"engine"
+				// xref to string "player_connect_full"
+				// 56 57 8B F9 8B 0D ? ? ? ? 8B 01 8B 50 18
+				"windows"	"\x56\x57\x8B\xF9\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x01\x8B\x50\x18"
+			}
+			
+			"CHLTVServer::AddNewFrame"
+			{
+				"library"	"engine"
+				// xref to string "CHLTVServer::AddNewFrame"
 				// 55 8B EC 83 EC 20 A1 ? ? ? ? 53 56 57
 				"windows"	"\x55\x8B\xEC\x83\xEC\x20\xA1\x2A\x2A\x2A\x2A\x53\x56\x57"
 			}

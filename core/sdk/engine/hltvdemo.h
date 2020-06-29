@@ -18,12 +18,18 @@
 class CHLTVDemoRecorder : public IDemoRecorder
 {
 public:
+	virtual ~CHLTVDemoRecorder();
+
+	// Convert to demo recorder
+	IDemoRecorder* GetDemoRecorder() { return this; }
+
+private:
 	CDemoFile		m_DemoFile;
 	bool			m_bIsRecording;
 	int				m_nFrameCount;
 	float			m_nStartTick;
 	int				m_SequenceInfo;
-	int				m_nDeltaTick;	
+	int				m_nDeltaTick;
 	int				m_nSignonTick;
 	bf_write		m_MessageData; // temp buffer for all network messages
 };

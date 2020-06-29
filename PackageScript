@@ -28,9 +28,9 @@ def CopyFiles(src, dest, files):
     source_path = os.path.join(builder.sourcePath, src, source_file)
     builder.AddCopy(source_path, dest_entry)
 
-# VDF Loaders
+# VDF Loader
 CopyFiles('vdf', 'addons',
- [ 'sourcetvsupport_vsp.vdf' ]
+ [ 'sourcetvsupport_vsp_l4d.vdf', 'sourcetvsupport_vsp_l4d2.vdf' ]
 )
 
 CopyFiles('vdf', 'addons/metamod',

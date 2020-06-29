@@ -5,14 +5,14 @@ EXPOSE_SINGLE_INTERFACE(VSPPlugin, IServerPluginCallbacks, INTERFACEVERSION_ISER
 
 bool VSPPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory)
 {
-	g_pCVar = (ICvar *)interfaceFactory(CVAR_INTERFACE_VERSION, NULL);
+	g_pCVar = static_cast<ICvar*>(interfaceFactory(CVAR_INTERFACE_VERSION, NULL));
 	if (g_pCVar == NULL) {
-		printf(PLUGIN_LOG_PREFIX "Couldn't retrieve interface \"" CVAR_INTERFACE_VERSION "\"\n");
+		fprintf(stderr, PLUGIN_LOG_PREFIX "Couldn't retrieve interface \"" CVAR_INTERFACE_VERSION "\"\n");
 
 		return false;
 	}
 
-	static const char * const cvars[] = {
+	static const char* const cvars[] = {
 		"tv_enable",
 		"tv_maxclients",
 		"tv_dispatchmode",
@@ -45,18 +45,18 @@ bool VSPPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameS
 	};
 
 	int handled = 0;
-	for (auto &&name : cvars) {
-		ConVar *cvar = g_pCVar->FindVar(name);
-		if (cvar == NULL) {
+	for (auto&& name : cvars) {
+		ConVar* pCvar = g_pCVar->FindVar(name);
+		if (pCvar == NULL) {
 			fprintf(stderr, PLUGIN_LOG_PREFIX "Couldn't find convar \"%s\"\n", name);
 
 			continue;
 		}
 
 		handled++;
-		cvar->RemoveFlags(FCVAR_DEVELOPMENTONLY);
+		pCvar->RemoveFlags(FCVAR_DEVELOPMENTONLY);
 	}
-	
+
 	printf(PLUGIN_LOG_PREFIX "SourceTV related convars (%d out of %d) were successfully exposed. Unloading...\n", handled, NELEMS(cvars));
 
 	return false;

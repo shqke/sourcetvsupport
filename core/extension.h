@@ -12,24 +12,24 @@
 // Must include mathlib.h before utlmemory.h: V_swap is not getting resolved for utlmemory.h and utlmemory.h doesn't include mathlib.h (gcc)
 #include <mathlib/mathlib.h>
 #include <eiface.h>
-extern IVEngineServer *engine;
-extern IServerGameDLL *gamedll;
+extern IVEngineServer* engine;
+extern IServerGameDLL* gamedll;
 
 #include <iserver.h>
-extern IServer *sv;
+extern IServer* sv;
 
 #include <ihltv.h>
-extern IHLTVServer *ihltv;
-extern IServer *hltv;
+extern IHLTVServer* ihltv;
+extern IServer* hltv;
 
 #include <ihltvdirector.h>
-extern IHLTVDirector *hltvdirector;
+extern IHLTVDirector* hltvdirector;
 
 #include <game/server/iplayerinfo.h>
-extern IPlayerInfoManager *playerinfomanager;
+extern IPlayerInfoManager* playerinfomanager;
 
 #include <networkstringtabledefs.h>
-extern INetworkStringTableContainer *networkStringTableContainerServer;
+extern INetworkStringTableContainer* networkStringTableContainerServer;
 
 #include <iclient.h>
 #include <tier1/interface.h>
@@ -40,7 +40,7 @@ extern INetworkStringTableContainer *networkStringTableContainerServer;
 
 // Engine
 #include "sdk/public/engine/inetsupport.h"
-extern INetSupport *g_pNetSupport;
+extern INetSupport* g_pNetSupport;
 
 #include "sdk/engine/hltvdemo.h"
 
@@ -51,8 +51,6 @@ enum ESocketIndex_t
 
 #define CONNECTIONLESS_HEADER			0xFFFFFFFF	// all OOB packet start with this sequence
 #define S2C_CHALLENGE			'A' // + challenge value
-
-#define NET_MAX_PAYLOAD 0x200000
 
 // Metamod Source
 #include <ISmmPlugin.h>
@@ -69,24 +67,24 @@ PLUGIN_GLOBALVARS();
 #include <IExtensionSys.h>
 using namespace SourceMod;
 
-extern IExtension *myself;
-extern ISourceMod *g_pSM;
-extern ISourceMod *smutils;
+extern IExtension* myself;
+extern ISourceMod* g_pSM;
+extern ISourceMod* smutils;
 
 #include <IShareSys.h>
-extern IShareSys *sharesys;
+extern IShareSys* sharesys;
 
 #include <IGameConfigs.h>
-extern IGameConfigManager *gameconfs;
+extern IGameConfigManager* gameconfs;
 
 #include <IPlayerHelpers.h>
-extern IPlayerManager *playerhelpers;
+extern IPlayerManager* playerhelpers;
 
 #include <extensions/ISDKTools.h>
-extern ISDKTools *sdktools;
+extern ISDKTools* sdktools;
 
 #include <extensions/IBinTools.h>
-extern IBinTools *bintools;
+extern IBinTools* bintools;
 
 #define SM_MKIFACE(name) SMINTERFACE_##name##_NAME, SMINTERFACE_##name##_VERSION
 

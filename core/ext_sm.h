@@ -25,36 +25,44 @@ public:
 	void Unload();
 
 private:
-	bool CreateDetours(char *error, size_t maxlength);
+	bool CreateDetours(char* error, size_t maxlength);
 
 	bool m_bIsLoaded;
 
-	CDetour *detour_SteamInternal_GameServer_Init;
-	CDetour *detour_SteamGameServer_Shutdown;
+	CDetour* detour_SteamInternal_GameServer_Init;
+	CDetour* detour_SteamGameServer_Shutdown;
 
-	CDetour *detour_CHLTVDemoRecorder_RecordStringTables;
-	CDetour *detour_CBaseServer_IsExclusiveToLobbyConnections;
-	CDetour *detour_CBaseClient_SendFullConnectEvent;
-	CDetour *detour_CSteam3Server_NotifyClientDisconnect;
-	CDetour *detour_CHLTVServer_AddNewFrame;
+	CDetour* detour_CBaseServer_IsExclusiveToLobbyConnections;
+	CDetour* detour_CBaseClient_SendFullConnectEvent;
+	CDetour* detour_CSteam3Server_NotifyClientDisconnect;
+	CDetour* detour_CHLTVServer_AddNewFrame;
 
-	ICallWrapper *vcall_CBaseServer_GetChallengeNr;
-	ICallWrapper *vcall_CBaseServer_GetChallengeType;
+	ICallWrapper* vcall_CBaseServer_GetChallengeNr;
+	ICallWrapper* vcall_CBaseServer_GetChallengeType;
+
+public:
+	int shookid_IDemoRecorder_RecordStringTables;
+	int shookid_IDemoRecorder_RecordServerClasses;
+	int shookid_CBaseServer_ReplyChallenge;
+	int shookid_SteamGameServer_LogOff;
+	int shookid_IServer_IsPausable;
 
 public:
 	void OnGameServer_Init();
 	void OnGameServer_Shutdown();
-	void OnSetHLTVServer(IHLTVServer *pHLTVServer);
+	void OnSetHLTVServer(IHLTVServer* pHLTVServer);
 
 public: // Wrappers for call wrappers
-	int GetChallengeNr(IServer *sv, netadr_t &adr);
-	int GetChallengeType(IServer *sv, netadr_t &adr);
+	int GetChallengeNr(IServer* sv, netadr_t& adr);
+	int GetChallengeType(IServer* sv, netadr_t& adr);
 
 public: // SourceHook callbacks
-	void Handler_IHLTVDirector_SetHLTVServer(IHLTVServer *pHLTVServer);
-	void Handler_CBaseServer_ReplyChallenge(netadr_s &adr, CBitRead &inmsg);
+	void Handler_IHLTVDirector_SetHLTVServer(IHLTVServer* pHLTVServer);
+	void Handler_IDemoRecorder_RecordStringTables();
+	void Handler_IDemoRecorder_RecordServerClasses(ServerClass* pClasses);
+	void Handler_CBaseServer_ReplyChallenge(netadr_s& adr, CBitRead& inmsg);
 	void Handler_ISteamGameServer_LogOff();
-	void Handler_CFrameSnapshotManager_LevelChanged();
+	bool Handler_IServer_IsPausable() const;
 
 public: // IExtensionInterface
 	/**
@@ -67,25 +75,27 @@ public: // IExtensionInterface
 	* @param late		If this extension was loaded "late" (i.e. manually).
 	* @return			True if load should continue, false otherwise.
 	*/
-	virtual bool OnExtensionLoad(IExtension *me, IShareSys *sys, char *error, size_t maxlength, bool late);
+	bool OnExtensionLoad(IExtension* me, IShareSys* sys, char* error, size_t maxlength, bool late) override;
 
 	/**
 	* @brief Called when the extension is about to be unloaded.
 	*/
-	virtual void OnExtensionUnload();
+	void OnExtensionUnload() override;
 
 	/**
 	* @brief Called when all extensions are loaded (loading cycle is done).
 	* If loaded late, this will be called right after OnExtensionLoad().
 	*/
-	virtual void OnExtensionsAllLoaded();
+	void OnExtensionsAllLoaded() override;
 
 	/**
 	* @brief Called when your pause state is about to change.
 	*
 	* @param pause		True if pausing, false if unpausing.
 	*/
-	virtual void OnExtensionPauseChange(bool pause) {}
+	void OnExtensionPauseChange(bool pause) override
+	{
+	}
 
 	/**
 	* @brief Asks the extension whether it's safe to remove an external
@@ -103,7 +113,7 @@ public: // IExtensionInterface
 	* @return					True to continue, false to unload this
 	* 							extension afterwards.
 	*/
-	virtual bool QueryInterfaceDrop(SMInterface *pInterface);
+	bool QueryInterfaceDrop(SMInterface* pInterface) override;
 
 	/**
 	* @brief Notifies the extension that an external interface it uses is being removed.
@@ -113,7 +123,7 @@ public: // IExtensionInterface
 	*							be queried using SMInterface functions unless
 	*							it can be verified to match an existing
 	*/
-	virtual void NotifyInterfaceDrop(SMInterface *pInterface);
+	void NotifyInterfaceDrop(SMInterface* pInterface) override;
 
 	/**
 	* @brief Return false to tell Core that your extension should be considered unusable.
@@ -122,7 +132,7 @@ public: // IExtensionInterface
 	* @param maxlength			Size of error buffer.
 	* @return					True on success, false otherwise.
 	*/
-	virtual bool QueryRunning(char *error, size_t maxlength);
+	bool QueryRunning(char* error, size_t maxlength) override;
 
 	/**
 	* @brief For extensions loaded through SourceMod, this should return true
@@ -132,35 +142,50 @@ public: // IExtensionInterface
 	*
 	* @return					True if Metamod:Source is needed.
 	*/
-	virtual bool IsMetamodExtension() { return false; }
+	bool IsMetamodExtension() override
+	{
+		return false;
+	}
 
 	/**
 	* @brief Must return a string containing the extension's short name.
 	*
 	* @return					String containing extension name.
 	*/
-	virtual const char *GetExtensionName() { return CONF_NAME; }
+	const char* GetExtensionName() override
+	{
+		return CONF_NAME;
+	}
 
 	/**
 	* @brief Must return a string containing the extension's URL.
 	*
 	* @return					String containing extension URL.
 	*/
-	virtual const char *GetExtensionURL() { return CONF_URL; }
+	const char* GetExtensionURL() override
+	{
+		return CONF_URL;
+	}
 
 	/**
 	* @brief Must return a string containing a short identifier tag.
 	*
 	* @return					String containing extension tag.
 	*/
-	virtual const char *GetExtensionTag() { return CONF_LOGTAG; }
+	const char* GetExtensionTag() override
+	{
+		return CONF_LOGTAG;
+	}
 
 	/**
 	* @brief Must return a string containing a short author identifier.
 	*
 	* @return					String containing extension author.
 	*/
-	virtual const char *GetExtensionAuthor() { return CONF_AUTHOR; }
+	const char* GetExtensionAuthor() override
+	{
+		return CONF_AUTHOR;
+	}
 
 	/**
 	* @brief Must return a string containing version information.
@@ -178,7 +203,10 @@ public: // IExtensionInterface
 	*
 	* @return					String containing extension version.
 	*/
-	virtual const char *GetExtensionVerString() { return CONF_VERSION; }
+	const char* GetExtensionVerString() override
+	{
+		return CONF_VERSION;
+	}
 
 	/**
 	* @brief Must return a string containing description text.
@@ -190,16 +218,22 @@ public: // IExtensionInterface
 	*
 	* @return					String containing extension description.
 	*/
-	virtual const char *GetExtensionDescription() { return CONF_DESCRIPTION; }
+	const char* GetExtensionDescription() override
+	{
+		return CONF_DESCRIPTION;
+	}
 
 	/**
 	* @brief Must return a string containing the compilation date.
 	*
 	* @return					String containing the compilation date.
 	*/
-	virtual const char *GetExtensionDateString() { return CONF_DATESTRING; }
+	const char* GetExtensionDateString() override
+	{
+		return CONF_DATESTRING;
+	}
 };
 
-extern SMExtension *smext;
+extern SMExtension* smext;
 
 #endif

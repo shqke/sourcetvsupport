@@ -10,16 +10,16 @@ Introduction
 ------
 Set of plugins that help to fix broken broadcasting/demo recording features.
 
-More information on wiki: https://developer.valvesoftware.com/wiki/SourceTV
+More information about SourceTV on wiki: https://developer.valvesoftware.com/wiki/SourceTV
 
 Requirements
 ------
-- [MM:Source](https://www.sourcemm.net/)
+- [MM:Source (preferably latest)](https://www.sourcemm.net/)
 - [SourceMod (1.8+)](https://www.sourcemod.net/)
 
 Supported Games
 ------
-- ~~[Left 4 Dead 1](https://store.steampowered.com/app/500/Left_4_Dead/)~~
+- [Left 4 Dead 1](https://store.steampowered.com/app/500/Left_4_Dead/)
 - [Left 4 Dead 2](https://store.steampowered.com/app/550/Left_4_Dead_2/)
 
 Installation
@@ -38,19 +38,21 @@ Command Line Parameters
 
 Fixed Issues
 ------
-- `CHLTVServer::stringTableCRC` was never set to value of `CGameServer::stringTableCRC`
-- Insufficient buffer size to store string tables data
-- Cvar `sv_hibernate_when_empty` would cause a consistent memory leak
+- Property **CHLTVServer::stringTableCRC** was never set
+- Insufficient buffer size to store string tables and/or data tables
+- Hibernation was causing a consistent memory leak
 - Cvar `tv_enable` and some others were not available from command line
-- HLTV clients are no longer forced to join lobbies
-- Server fails to initiate due to bound HLTV port being passed as query port, freezes
-- Server crash on HLTV client disconnect (auth ticket method)
-- Event `player_full_connect` will never be sent for HLTV clients
-- `ISteamGameServer::LogOff` no longer called whenever SourceTV shuts down
-- SourceTV bot now is being forced to change his team to spectators
+- HLTV clients were forced to interact with lobby system
+- (L4D2) **ISteamGameServer** interface was failing to initiate due to bound HLTV port being passed as query port
+- Server would crash on HLTV client disconnect (auth ticket method)
+- (L4D2) Event `player_full_connect` was sent for HLTV clients userids
+- (L4D2) **ISteamGameServer** interface would log off whenever **CHLTVServer** was shutting down
+- SourceTV bot was never moved into Spectator team
+- (L4D) Server is now always respects value of cvar `sv_pausable`
 
 Known Issues
 ------
 - Missing arms models/blinking world model attachments during SourceTV footage playback
   - Needed modifications on game client
 - Some models are getting stuck during playback (helicopter on c8m1 after intro)
+- Relay feature is broken
