@@ -69,7 +69,6 @@ protected:
 	void* pfn_SteamGameServer_GetHSteamPipe;
 	void* pfn_SteamGameServer_GetHSteamUser;
 	void* pfn_SteamInternal_GameServer_Init;
-	void* pfn_SteamGameServer_Shutdown;
 	void* pfn_SteamGameServer_InitSafe;
 
 public:

@@ -46,7 +46,11 @@ extern INetSupport* g_pNetSupport;
 
 enum ESocketIndex_t
 {
-	NS_HLTV = 2,
+	NS_INVALID = -1,
+
+	NS_CLIENT = 0,	// client socket
+	NS_SERVER,	// server socket
+	NS_HLTV,
 };
 
 #define CONNECTIONLESS_HEADER			0xFFFFFFFF	// all OOB packet start with this sequence

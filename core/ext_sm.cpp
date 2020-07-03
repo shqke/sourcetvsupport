@@ -145,7 +145,6 @@ SMExtension::SMExtension()
 	vcall_CBaseServer_GetChallengeType = NULL;
 
 	detour_SteamInternal_GameServer_Init = NULL;
-	detour_SteamGameServer_Shutdown = NULL;
 
 	detour_CBaseServer_IsExclusiveToLobbyConnections = NULL;
 	detour_CBaseClient_SendFullConnectEvent = NULL;
@@ -188,7 +187,6 @@ void SMExtension::Load()
 
 #if SOURCE_ENGINE != SE_LEFT4DEAD
 	detour_SteamInternal_GameServer_Init->EnableDetour();
-	detour_SteamGameServer_Shutdown->EnableDetour();
 	detour_CBaseClient_SendFullConnectEvent->EnableDetour();
 #endif
 
@@ -222,11 +220,6 @@ void SMExtension::Unload()
 	if (detour_SteamInternal_GameServer_Init != NULL) {
 		detour_SteamInternal_GameServer_Init->Destroy();
 		detour_SteamInternal_GameServer_Init = NULL;
-	}
-
-	if (detour_SteamGameServer_Shutdown != NULL) {
-		detour_SteamGameServer_Shutdown->Destroy();
-		detour_SteamGameServer_Shutdown = NULL;
 	}
 
 	if (detour_CBaseServer_IsExclusiveToLobbyConnections != NULL) {
@@ -268,13 +261,6 @@ bool SMExtension::CreateDetours(char* error, size_t maxlength)
 	detour_SteamInternal_GameServer_Init = DETOUR_CREATE_STATIC(Handler_SteamInternal_GameServer_Init, pfn_SteamInternal_GameServer_Init);
 	if (detour_SteamInternal_GameServer_Init == NULL) {
 		V_strncpy(error, "Unable to create a detour for \"SteamInternal_GameServer_Init\"", maxlength);
-
-		return false;
-	}
-
-	detour_SteamGameServer_Shutdown = DETOUR_CREATE_STATIC(Handler_SteamGameServer_Shutdown, pfn_SteamGameServer_Shutdown);
-	if (detour_SteamGameServer_Shutdown == NULL) {
-		V_strncpy(error, "Unable to create a detour for \"SteamGameServer_Shutdown\"", maxlength);
 
 		return false;
 	}
@@ -342,10 +328,10 @@ void SMExtension::OnGameServer_Shutdown()
 	shookid_SteamGameServer_LogOff = 0;
 }
 
-void SMExtension::OnSetHLTVServer(IHLTVServer* pHLTVServer)
+void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 {
-	if (pHLTVServer != ihltv) {
-		ihltv = pHLTVServer;
+	if (pIHLTVServer != ihltv) {
+		ihltv = pIHLTVServer;
 
 		SH_REMOVE_HOOK_ID(shookid_CBaseServer_ReplyChallenge);
 		shookid_CBaseServer_ReplyChallenge = 0;
@@ -357,8 +343,8 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pHLTVServer)
 		shookid_IDemoRecorder_RecordServerClasses = 0;
 
 		hltv = NULL;
-		if (pHLTVServer != NULL) {
-			hltv = pHLTVServer->GetBaseServer();
+		if (pIHLTVServer != NULL) {
+			hltv = pIHLTVServer->GetBaseServer();
 			if (hltv != NULL) {
 				shookid_CBaseServer_ReplyChallenge = SH_ADD_MANUALVPHOOK(CBaseServer_ReplyChallenge, hltv, SH_MEMBER(this, &SMExtension::Handler_CBaseServer_ReplyChallenge), false);
 			}
@@ -373,7 +359,7 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pHLTVServer)
 		// bug##: in CHLTVServer::StartMaster, bot is executing "spectate" command which does nothing and it keeps him in unassigned team (index 0)
 		// bot's going to fall under CDirectorSessionManager::UpdateNewPlayers's conditions to be auto-assigned to some playable team
 		// enforce team change here to spectator (index 1)
-		IGamePlayer* pl = playerhelpers->GetGamePlayer(pHLTVServer->GetHLTVSlot() + 1);
+		IGamePlayer* pl = playerhelpers->GetGamePlayer(pIHLTVServer->GetHLTVSlot() + 1);
 		if (pl != NULL && pl->IsSourceTV()) {
 			IPlayerInfo* plInfo = pl->GetPlayerInfo();
 			if (plInfo != NULL && plInfo->GetTeamIndex() != TEAM_SPECTATOR) {

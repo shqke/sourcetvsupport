@@ -30,7 +30,6 @@ private:
 	bool m_bIsLoaded;
 
 	CDetour* detour_SteamInternal_GameServer_Init;
-	CDetour* detour_SteamGameServer_Shutdown;
 
 	CDetour* detour_CBaseServer_IsExclusiveToLobbyConnections;
 	CDetour* detour_CBaseClient_SendFullConnectEvent;

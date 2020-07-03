@@ -85,7 +85,6 @@ bool CGameData::SetupFromSteamAPILibrary(char* error, int maxlength)
 		{ "SteamInternal_GameServer_Init", pfn_SteamInternal_GameServer_Init },
 		{ "SteamGameServer_GetHSteamPipe", pfn_SteamGameServer_GetHSteamPipe },
 		{ "SteamGameServer_GetHSteamUser", pfn_SteamGameServer_GetHSteamUser },
-		{ "SteamGameServer_Shutdown", pfn_SteamGameServer_Shutdown },
 	};
 
 	for (auto&& el : s_symbols) {
