@@ -257,6 +257,9 @@ void SMExtension::Unload()
 
 bool SMExtension::CreateDetours(char* error, size_t maxlength)
 {
+	// Game config is never used by detour class to handle errors ourselves
+	CDetourManager::Init(smutils->GetScriptingEngine(), NULL);
+
 #if SOURCE_ENGINE != SE_LEFT4DEAD
 	detour_SteamInternal_GameServer_Init = DETOUR_CREATE_STATIC(Handler_SteamInternal_GameServer_Init, pfn_SteamInternal_GameServer_Init);
 	if (detour_SteamInternal_GameServer_Init == NULL) {
@@ -552,9 +555,6 @@ bool SMExtension::OnExtensionLoad(IExtension* me, IShareSys* sys, char* error, s
 	SM_GET_IFACE(GAMECONFIG, gameconfs);
 	SM_GET_IFACE(PLAYERMANAGER, playerhelpers);
 
-	// Game config is never used by detour class to handle errors ourselves
-	CDetourManager::Init(smutils->GetScriptingEngine(), NULL);
-
 	IGameConfig* gc = NULL;
 	if (!gameconfs->LoadGameConfigFile(GAMEDATA_FILE, &gc, error, maxlength)) {
 		V_strncpy(error, "Unable to load a gamedata file \"" GAMEDATA_FILE ".txt\"", maxlength);
@@ -583,6 +583,9 @@ bool SMExtension::OnExtensionLoad(IExtension* me, IShareSys* sys, char* error, s
 
 	sharesys->AddDependency(myself, "bintools.ext", true, true);
 	sharesys->AddDependency(myself, "sdktools.ext", true, true);
+
+	// Let plugins know when it's safe to use SourceTV features
+	sharesys->RegisterLibrary(myself, "sourcetvsupport");
 
 	return true;
 }
