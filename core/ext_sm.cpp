@@ -11,6 +11,7 @@ IShareSys* sharesys = NULL;
 
 IGameConfigManager* gameconfs = NULL;
 IPlayerManager* playerhelpers = NULL;
+IGameHelpers* gamehelpers = NULL;
 
 ISDKTools* sdktools = NULL;
 IBinTools* bintools = NULL;
@@ -140,6 +141,8 @@ SMExtension::SMExtension()
 	shookid_IServer_IsPausable = 0;
 	shookid_IDemoRecorder_RecordStringTables = 0;
 	shookid_IDemoRecorder_RecordServerClasses = 0;
+
+	sendprop_CTerrorPlayer_m_fFlags = 0;
 
 	vcall_CBaseServer_GetChallengeNr = NULL;
 	vcall_CBaseServer_GetChallengeType = NULL;
@@ -362,8 +365,20 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 		// bug##: in CHLTVServer::StartMaster, bot is executing "spectate" command which does nothing and it keeps him in unassigned team (index 0)
 		// bot's going to fall under CDirectorSessionManager::UpdateNewPlayers's conditions to be auto-assigned to some playable team
 		// enforce team change here to spectator (index 1)
-		IGamePlayer* pl = playerhelpers->GetGamePlayer(pIHLTVServer->GetHLTVSlot() + 1);
+		int botIndex = pIHLTVServer->GetHLTVSlot() + 1;
+
+		IGamePlayer* pl = playerhelpers->GetGamePlayer(botIndex);
 		if (pl != NULL && pl->IsSourceTV()) {
+			CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(botIndex);
+			if (pEntity != NULL) {
+				*reinterpret_cast<int*>(reinterpret_cast<byte*>(pEntity) + sendprop_CTerrorPlayer_m_fFlags) |= FL_FAKECLIENT;
+
+				edict_t* pEdict = pl->GetEdict();
+				if (pEdict != NULL) {
+					gamehelpers->SetEdictStateChanged(pEdict, sendprop_CTerrorPlayer_m_fFlags);
+				}
+			}
+
 			IPlayerInfo* plInfo = pl->GetPlayerInfo();
 			if (plInfo != NULL && plInfo->GetTeamIndex() != TEAM_SPECTATOR) {
 				Msg(PLUGIN_LOG_PREFIX "Moving \"%s\" to spectators team\n", pl->GetName());
@@ -554,6 +569,16 @@ bool SMExtension::OnExtensionLoad(IExtension* me, IShareSys* sys, char* error, s
 	smutils = g_pSM;
 	SM_GET_IFACE(GAMECONFIG, gameconfs);
 	SM_GET_IFACE(PLAYERMANAGER, playerhelpers);
+	SM_GET_IFACE(GAMEHELPERS, gamehelpers);
+
+	sm_sendprop_info_t info;
+	if (!gamehelpers->FindSendPropInfo("CTerrorPlayer", "m_fFlags", &info)) {
+		V_strncpy(error, "Unable to find SendProp \"CTerrorPlayer::m_fFlags\"", maxlength);
+
+		return false;
+	}
+
+	sendprop_CTerrorPlayer_m_fFlags = info.actual_offset;
 
 	IGameConfig* gc = NULL;
 	if (!gameconfs->LoadGameConfigFile(GAMEDATA_FILE, &gc, error, maxlength)) {

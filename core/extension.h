@@ -84,6 +84,9 @@ extern IGameConfigManager* gameconfs;
 #include <IPlayerHelpers.h>
 extern IPlayerManager* playerhelpers;
 
+#include <IGameHelpers.h>
+extern IGameHelpers* gamehelpers;
+
 #include <extensions/ISDKTools.h>
 extern ISDKTools* sdktools;
 

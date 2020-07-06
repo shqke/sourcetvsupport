@@ -49,6 +49,7 @@ Fixed Issues
 - (L4D2) **ISteamGameServer** interface would log off whenever **CHLTVServer** was shutting down
 - SourceTV bot was never moved into Spectator team
 - (L4D) Server is now always respects value of cvar `sv_pausable`
+- SourceTV bot doesn't take a human slot
 
 Known Issues
 ------

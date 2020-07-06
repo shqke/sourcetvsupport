@@ -46,6 +46,8 @@ public:
 	int shookid_SteamGameServer_LogOff;
 	int shookid_IServer_IsPausable;
 
+	int sendprop_CTerrorPlayer_m_fFlags;
+
 public:
 	void OnGameServer_Init();
 	void OnGameServer_Shutdown();
