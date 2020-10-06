@@ -47,8 +47,8 @@ jobs:
           sudo dpkg --add-architecture i386
           sudo apt-get update
           sudo apt-get install -y clang g++-multilib
-          echo "::set-env name=CC::clang"
-          echo "::set-env name=CXX::clang++"
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
           
       - name: Install (Windows)
         if: runner.os == 'Windows'
@@ -66,7 +66,7 @@ jobs:
           :: See: https://stackoverflow.com/questions/39183272/loop-through-all-environmental-variables-and-take-actions-depending-on-prefix
           setlocal
           for /f "delims== tokens=1,2" %%a in ('set') do (
-            echo ::set-env name=%%a::%%b
+            echo "%%a=%%b" >> $GITHUB_ENV
           )
           endlocal
         
