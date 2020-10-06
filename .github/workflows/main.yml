@@ -54,19 +54,17 @@ jobs:
         if: runner.os == 'Windows'
         shell: cmd
         run: |
-          SET VSWHERE="C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere"
-          
           :: See https://github.com/microsoft/vswhere/wiki/Find-VC
-          for /f "usebackq delims=*" %%i in (`%VSWHERE% -latest -property installationPath`) do (
+          for /f "usebackq delims=*" %%i in (`"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do (
             call "%%i"\Common7\Tools\vsdevcmd.bat -arch=x86 -host_arch=x64
           )
           
-          :: Loop over all environment variables and make them global using set-env.
-          :: See: https://help.github.com/en/articles/development-tools-for-github-actions#set-an-environment-variable-set-env
+          :: Loop over all environment variables and set them globally for future steps.
+          :: See: https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-commands-for-github-actions#setting-an-environment-variable
           :: See: https://stackoverflow.com/questions/39183272/loop-through-all-environmental-variables-and-take-actions-depending-on-prefix
           setlocal
           for /f "delims== tokens=1,2" %%a in ('set') do (
-            echo ::set-env name=%%a::%%b
+            echo %%a=%%b >> %GITHUB_ENV%
           )
           endlocal
         
