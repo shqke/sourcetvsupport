@@ -1,14 +1,10 @@
-# SourceTV Support
-
-Project Build Status
-------
-Project | Build Status
------------- | -------------
-SourceTV Support | [![Build Status](https://github.com/shqke/sourcetvsupport/workflows/Build%20&%20Deploy/badge.svg?branch=master)](https://github.com/shqke/sourcetvsupport/actions/)
+![Build Status](https://github.com/shqke/sourcetvsupport/workflows/Build%20&%20Deploy/badge.svg?branch=master)
+![License](https://img.shields.io/github/license/shqke/sourcetvsupport)
+![Release](https://img.shields.io/github/v/release/shqke/sourcetvsupport)
 
 Introduction
 ------
-Set of plugins that help to fix broken broadcasting/demo recording features.
+SourceMod extension that fixes broken broadcasting/demo recording features in L4D series.
 
 More information about SourceTV on wiki: https://developer.valvesoftware.com/wiki/SourceTV
 
@@ -19,7 +15,7 @@ Requirements
 
 Supported Games
 ------
-- [Left 4 Dead 1](https://store.steampowered.com/app/500/Left_4_Dead/)
+- [Left 4 Dead](https://store.steampowered.com/app/500/Left_4_Dead/)
 - [Left 4 Dead 2](https://store.steampowered.com/app/550/Left_4_Dead_2/)
 
 Installation
@@ -50,6 +46,7 @@ Fixed Issues
 - SourceTV bot was never moved into Spectator team
 - (L4D) Server is now always respects value of cvar `sv_pausable`
 - SourceTV bot doesn't take a human slot and doesn't count as a potential voter
+- "CUtlRBTree overflow" on level transition
 
 Known Issues
 ------

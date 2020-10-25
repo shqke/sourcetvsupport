@@ -27,6 +27,12 @@
 				"linux"		"19460"
 				"windows"	"19504"
 			}
+
+			"CFrameSnapshotManager::m_PackedEntitiesPool"
+			{
+				"linux"		"40"
+				"windows"	"40"
+			}
 		}
 		
 		"Signatures"
@@ -78,6 +84,12 @@
 				"library"	"engine"
 				"linux"		"@_ZN11CHLTVServer11AddNewFrameEP12CClientFrame"
 			}
+			
+			"CFrameSnapshotManager::LevelChanged"
+			{
+				"library"	"engine"
+				"linux"		"@_ZN21CFrameSnapshotManager12LevelChangedEv"
+			}
 		}
 	}
 
@@ -108,17 +120,17 @@
 		{
 			"DataTable_WriteSendTablesBuffer"
 			{
+				"library"	"engine"
 				// Locate CDemoRecorder::RecordServerClasses by string "CDemoRecorder::RecordServerClasses"
 				// Next call in CHLTVDemoRecorder::RecordServerClasses that takes 2 arguments
-				"library"	"engine"
 				// 53 56 57 8B 7C 24 10 57 E8 ? ? ? ? 8B 74 24 18
 				"windows"	"\x53\x56\x57\x8B\x7C\x24\x10\x57\xE8\x2A\x2A\x2A\x2A\x8B\x74\x24\x18"
 			}
 			
 			"DataTable_WriteClassInfosBuffer"
 			{
-				// Next call in CHLTVDemoRecorder::RecordServerClasses after DataTable_WriteSendTablesBuffer
 				"library"	"engine"
+				// Next call in CHLTVDemoRecorder::RecordServerClasses after DataTable_WriteSendTablesBuffer
 				// 56 8B 74 24 08 33 C9 85 F6
 				"windows"	"\x56\x8B\x74\x24\x08\x33\xC9\x85\xF6"
 			}
@@ -126,6 +138,7 @@
 			"CBaseServer::IsExclusiveToLobbyConnections"
 			{
 				"library"	"engine"
+				// Locate sv_allow_lobby_connect_only's integer value (first dword symbol), first xref to
 				// 8B 01 8B 50 58 FF D2 84 C0
 				"windows"	"\x8B\x01\x8B\x50\x58\xFF\xD2\x84\xC0"
 			}
@@ -152,6 +165,14 @@
 				// xref to string "CHLTVServer::AddNewFrame"
 				// 53 55 56 57 6A 04 6A 00 68 ? ? ? ? 6A 00 8B F1
 				"windows"	"\x53\x55\x56\x57\x6A\x04\x6A\x00\x68\x2A\x2A\x2A\x2A\x6A\x00\x8B\xF1"
+			}
+			
+			"CFrameSnapshotManager::LevelChanged"
+			{
+				"library"	"engine"
+				// Second method of virtual table for "CFrameSnapshotManager"
+				// 56 8B F1 8D 4E 58
+				"windows"	"\x56\x8B\xF1\x8D\x4E\x58"
 			}
 		}
 	}
@@ -183,17 +204,17 @@
 		{
 			"DataTable_WriteSendTablesBuffer"
 			{
+				"library"	"engine"
 				// Locate CDemoRecorder::RecordServerClasses by string "CDemoRecorder::RecordServerClasses"
 				// Next call in CHLTVDemoRecorder::RecordServerClasses that takes 2 arguments
-				"library"	"engine"
 				// 55 8B EC 53 8B 5D 08 56 57 53 E8 ? ? ? ? 8B 75 0C
 				"windows"	"\x55\x8B\xEC\x53\x8B\x5D\x08\x56\x57\x53\xE8\x2A\x2A\x2A\x2A\x8B\x75\x0C"
 			}
 			
 			"DataTable_WriteClassInfosBuffer"
 			{
-				// Next call in CHLTVDemoRecorder::RecordServerClasses after DataTable_WriteSendTablesBuffer
 				"library"	"engine"
+				// Next call in CHLTVDemoRecorder::RecordServerClasses after DataTable_WriteSendTablesBuffer
 				// 55 8B EC 56 8B 75 08 33 C9
 				"windows"	"\x55\x8B\xEC\x56\x8B\x75\x08\x33\xC9"
 			}
@@ -201,6 +222,7 @@
 			"CBaseServer::IsExclusiveToLobbyConnections"
 			{
 				"library"	"engine"
+				// Locate sv_allow_lobby_connect_only's integer value (first dword symbol), first xref to
 				// 8B 01 8B 50 5C FF D2 84 C0
 				"windows"	"\x8B\x01\x8B\x50\x5C\xFF\xD2\x84\xC0"
 			}
@@ -228,6 +250,14 @@
 				// xref to string "CHLTVServer::AddNewFrame"
 				// 55 8B EC 83 EC 20 A1 ? ? ? ? 53 56 57
 				"windows"	"\x55\x8B\xEC\x83\xEC\x20\xA1\x2A\x2A\x2A\x2A\x53\x56\x57"
+			}
+			
+			"CFrameSnapshotManager::LevelChanged"
+			{
+				"library"	"engine"
+				// Second method of virtual table for "CFrameSnapshotManager"
+				// 56 8B F1 8D 4E 58 E8 ? ? ? ? 8D 4E 28
+				"windows"	"\x56\x8B\xF1\x8D\x4E\x58\xE8\x2A\x2A\x2A\x2A\x8D\x4E\x28"
 			}
 		}
 	}

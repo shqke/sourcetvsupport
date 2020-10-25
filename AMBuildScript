@@ -46,6 +46,7 @@ class HLTVSupportConfig(object):
   def __init__(self):
     self.sdks = {}
     self.binaries = []
+    self.extensions = []
     self.generated_headers = None
     self.mms_root = None
     self.sm_root = None
@@ -141,6 +142,7 @@ class HLTVSupportConfig(object):
       '_snprintf=snprintf',
       '_vsnprintf=vsnprintf',
       'HAVE_STDINT_H',
+      'HAVE_STRING_H',
       'GNUC',
     ]
     cxx.cflags += [
@@ -337,32 +339,15 @@ class HLTVSupportConfig(object):
       compiler.cxxincludes += [os.path.join(sdk.path, *path)]
 
     if builder.target_platform == 'linux':
-      if sdk.name == 'episode1':
-        lib_folder = os.path.join(sdk.path, 'linux_sdk')
-      elif sdk.name in ['sdk2013', 'bms']:
-        lib_folder = os.path.join(sdk.path, 'lib', 'public', 'linux32')
-      else:
-        lib_folder = os.path.join(sdk.path, 'lib', 'linux')
+      lib_folder = os.path.join(sdk.path, 'lib', 'linux')
     elif builder.target_platform == 'mac':
-      if sdk.name in ['sdk2013', 'bms']:
-        lib_folder = os.path.join(sdk.path, 'lib', 'public', 'osx32')
-      else:
-        lib_folder = os.path.join(sdk.path, 'lib', 'mac')
+      lib_folder = os.path.join(sdk.path, 'lib', 'mac')
 	
     if builder.target_platform in ['linux', 'mac']:
-      if sdk.name in ['sdk2013', 'bms']:
-        compiler.postlink += [
-          compiler.Dep(os.path.join(lib_folder, 'tier1.a')),
-          compiler.Dep(os.path.join(lib_folder, 'mathlib.a'))
-        ]
-      else:
-        compiler.postlink += [
-          compiler.Dep(os.path.join(lib_folder, 'tier1_i486.a')),
-          compiler.Dep(os.path.join(lib_folder, 'mathlib_i486.a')),
-        ]
-
-      if sdk.name in ['blade', 'insurgency', 'doi', 'csgo']:
-        compiler.postlink += [compiler.Dep(os.path.join(lib_folder, 'interfaces_i486.a'))]
+      compiler.postlink += [
+        compiler.Dep(os.path.join(lib_folder, 'tier1_i486.a')),
+        compiler.Dep(os.path.join(lib_folder, 'mathlib_i486.a')),
+      ]
 
     dynamic_libs = []
     if builder.target_platform == 'linux':
@@ -416,7 +401,6 @@ HLTVSupport.configure()
 BuildScripts = [
   'core/AMBuilder',
   'vsp/AMBuilder',
-  'loader/AMBuilder',
 ]
 
 if builder.backend == 'amb2':

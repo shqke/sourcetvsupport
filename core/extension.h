@@ -1,19 +1,14 @@
 #ifndef _INCLUDE_SOURCETV_SUPPORT_H_
 #define _INCLUDE_SOURCETV_SUPPORT_H_
 
-#include "config.h"
+#include "smsdk_ext.h"
+#include "gamedata.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 
 // SDK
 #define TEAM_SPECTATOR			1	// spectator team
-
-// Must include mathlib.h before utlmemory.h: V_swap is not getting resolved for utlmemory.h and utlmemory.h doesn't include mathlib.h (gcc)
-#include <mathlib/mathlib.h>
-#include <eiface.h>
-extern IVEngineServer* engine;
-extern IServerGameDLL* gamedll;
 
 #include <iserver.h>
 extern IServer* sv;
@@ -31,12 +26,7 @@ extern IPlayerInfoManager* playerinfomanager;
 #include <networkstringtabledefs.h>
 extern INetworkStringTableContainer* networkStringTableContainerServer;
 
-#include <iclient.h>
-#include <tier1/interface.h>
-#include <tier1/utlbuffer.h>
-#include <checksum_crc.h>
 #include <netadr.h>
-#include <bitbuf.h>
 
 // Engine
 #include "sdk/public/engine/inetsupport.h"
@@ -57,62 +47,138 @@ enum ESocketIndex_t
 #define S2C_CHALLENGE			'A' // + challenge value
 
 // Metamod Source
-#include <ISmmPlugin.h>
-using namespace SourceMM;
-
 #include <sourcehook.h>
 using namespace SourceHook;
 
-PLUGIN_GLOBALVARS();
-
 // SourceMod
-#include <sm_platform.h>
-#include <ISourceMod.h>
-#include <IExtensionSys.h>
-using namespace SourceMod;
-
-extern IExtension* myself;
-extern ISourceMod* g_pSM;
-extern ISourceMod* smutils;
-
-#include <IShareSys.h>
-extern IShareSys* sharesys;
-
-#include <IGameConfigs.h>
-extern IGameConfigManager* gameconfs;
-
-#include <IPlayerHelpers.h>
-extern IPlayerManager* playerhelpers;
-
-#include <IGameHelpers.h>
-extern IGameHelpers* gamehelpers;
-
 #include <extensions/ISDKTools.h>
 extern ISDKTools* sdktools;
 
 #include <extensions/IBinTools.h>
 extern IBinTools* bintools;
 
-#define SM_MKIFACE(name) SMINTERFACE_##name##_NAME, SMINTERFACE_##name##_VERSION
+class CDetour;
 
-#define SM_GET_LATE_IFACE(prefix, addr) \
-	sharesys->RequestInterface(SM_MKIFACE(prefix), myself, (SMInterface **)&addr)
+class SMExtension :
+	public CGameData,
+	public SDKExtension
+{
+public:
+	SMExtension();
 
-#define SM_CHECK_IFACE(prefix, addr) \
-	if (!addr) { \
-		if (error != NULL && maxlength > 0) { \
-			size_t len = g_SMAPI->Format(error, maxlength, "Could not find interface: %s", SMINTERFACE_##prefix##_NAME); \
-			if (len >= maxlength) { \
-				error[maxlength - 1] = '\0'; \
-			} \
-		} \
-		return false; \
-	}
+public:
+	void Load();
+	void Unload();
 
-#define SM_GET_IFACE(prefix, addr) SM_CHECK_IFACE(prefix, SM_GET_LATE_IFACE(prefix, addr))
+private:
+	bool CreateDetours(char* error, size_t maxlength);
 
-// SourcePawn
-#include <sp_vm_api.h>
-using namespace SourcePawn;
+private:
+	CDetour* detour_SteamInternal_GameServer_Init;
+	CDetour* detour_CBaseServer_IsExclusiveToLobbyConnections;
+	CDetour* detour_CBaseClient_SendFullConnectEvent;
+	CDetour* detour_CSteam3Server_NotifyClientDisconnect;
+	CDetour* detour_CHLTVServer_AddNewFrame;
+	CDetour* detour_CFrameSnapshotManager_LevelChanged;
+
+	ICallWrapper* vcall_CBaseServer_GetChallengeNr;
+	ICallWrapper* vcall_CBaseServer_GetChallengeType;
+
+public:
+	int shookid_IDemoRecorder_RecordStringTables;
+	int shookid_IDemoRecorder_RecordServerClasses;
+	int shookid_CBaseServer_ReplyChallenge;
+	int shookid_SteamGameServer_LogOff;
+	int shookid_IServer_IsPausable;
+
+	int sendprop_CTerrorPlayer_m_fFlags;
+
+public:
+	void OnGameServer_Init();
+	void OnGameServer_Shutdown();
+	void OnSetHLTVServer(IHLTVServer* pHLTVServer);
+
+public: // Wrappers for call wrappers
+	int GetChallengeNr(IServer* sv, netadr_t& adr);
+	int GetChallengeType(IServer* sv, netadr_t& adr);
+
+public: // SourceHook callbacks
+	void Handler_IHLTVDirector_SetHLTVServer(IHLTVServer* pHLTVServer);
+	void Handler_IDemoRecorder_RecordStringTables();
+	void Handler_IDemoRecorder_RecordServerClasses(ServerClass* pClasses);
+	void Handler_CBaseServer_ReplyChallenge(netadr_s& adr, CBitRead& inmsg);
+	void Handler_ISteamGameServer_LogOff();
+	bool Handler_IServer_IsPausable() const;
+
+public: // SDKExtension
+	/**
+	 * @brief This is called after the initial loading sequence has been processed.
+	 *
+	 * @param error		Error message buffer.
+	 * @param maxlen	Size of error message buffer.
+	 * @param late		Whether or not the module was loaded after map load.
+	 * @return			True to succeed loading, false to fail.
+	 */
+	bool SDK_OnLoad(char* error, size_t maxlen, bool late) override;
+
+	/**
+	 * @brief This is called right before the extension is unloaded.
+	 */
+	void SDK_OnUnload() override;
+
+	/**
+	 * @brief This is called once all known extensions have been loaded.
+	 * Note: It is is a good idea to add natives here, if any are provided.
+	 */
+	void SDK_OnAllLoaded() override;
+
+	/**
+	 * @brief Called when Metamod is attached, before the extension version is called.
+	 *
+	 * @param error			Error buffer.
+	 * @param maxlength		Maximum size of error buffer.
+	 * @param late			Whether or not Metamod considers this a late load.
+	 * @return				True to succeed, false to fail.
+	 */
+	bool SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlength, bool late) override;
+
+public: // IExtensionInterface
+	/**
+	 * @brief Asks the extension whether it's safe to remove an external
+	 * interface it's using.  If it's not safe, return false, and the
+	 * extension will be unloaded afterwards.
+	 *
+	 * NOTE: It is important to also hook NotifyInterfaceDrop() in order to clean
+	 * up resources.
+	 *
+	 * @param pInterface		Pointer to interface being dropped.  This
+	 * 							pointer may be opaque, and it should not
+	 *							be queried using SMInterface functions unless
+	 *							it can be verified to match an existing
+	 *							pointer of known type.
+	 * @return					True to continue, false to unload this
+	 * 							extension afterwards.
+	 */
+	virtual bool QueryInterfaceDrop(SMInterface* pInterface) override;
+
+	/**
+	 * @brief Notifies the extension that an external interface it uses is being removed.
+	 *
+	 * @param pInterface		Pointer to interface being dropped.  This
+	 * 							pointer may be opaque, and it should not
+	 *							be queried using SMInterface functions unless
+	 *							it can be verified to match an existing
+	 */
+	virtual void NotifyInterfaceDrop(SMInterface* pInterface) override;
+
+	/**
+	 * @brief Return false to tell Core that your extension should be considered unusable.
+	 *
+	 * @param error				Error buffer.
+	 * @param maxlength			Size of error buffer.
+	 * @return					True on success, false otherwise.
+	 */
+	virtual bool QueryRunning(char* error, size_t maxlength) override;
+};
 
 #endif // _INCLUDE_SOURCETV_SUPPORT_H_

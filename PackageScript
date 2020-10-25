@@ -8,18 +8,18 @@ builder.SetBuildFolder('package')
 # Add any folders you need to this list
 folder_list = [
   'addons',
-  'addons/metamod',
   'addons/sourcetvsupport/bin',
   'addons/sourcemod/gamedata',
+  'addons/sourcemod/extensions',
 ]
 
-# Create the distribution folder hierarchy.
+# Create the distribution folder hierarchy
 folder_map = {}
 for folder in folder_list:
   norm_folder = os.path.normpath(folder)
   folder_map[folder] = builder.AddFolder(norm_folder)
 
-# Do all straight-up file copies from the source tree.
+# Do all straight-up file copies from the source tree
 def CopyFiles(src, dest, files):
   if not dest:
     dest = src
@@ -28,20 +28,25 @@ def CopyFiles(src, dest, files):
     source_path = os.path.join(builder.sourcePath, src, source_file)
     builder.AddCopy(source_path, dest_entry)
 
-# VDF Loader
-CopyFiles('vdf', 'addons',
+# VDF loader
+CopyFiles('extra', 'addons',
  [ 'sourcetvsupport_vsp_l4d.vdf', 'sourcetvsupport_vsp_l4d2.vdf' ]
 )
 
-CopyFiles('vdf', 'addons/metamod',
- [ 'sourcetvsupport_mm.vdf' ]
-)
-
-# GameData files
-CopyFiles('gamedata', 'addons/sourcemod/gamedata',
+# Gamedata file
+CopyFiles('extra', 'addons/sourcemod/gamedata',
  [ 'sourcetvsupport.txt' ]
 )
 
-# Copy binaries.
+# Autoload file
+CopyFiles('extra', 'addons/sourcemod/extensions',
+ [ 'sourcetvsupport.autoload' ]
+)
+
+# Copy extension
+for cxx_task in HLTVSupport.extensions:
+  builder.AddCopy(cxx_task.binary, folder_map['addons/sourcemod/extensions'])
+
+# Copy VSP binary
 for cxx_task in HLTVSupport.binaries:
   builder.AddCopy(cxx_task.binary, folder_map['addons/sourcetvsupport/bin'])

@@ -3,7 +3,7 @@
 
 // VSP Interface
 #include <iserverplugin.h>
-#include "../core/config.h"
+#include "../core/smsdk_config.h"
 
 class VSPPlugin :
 	public IServerPluginCallbacks
@@ -31,7 +31,7 @@ public: // IServerPluginCallbacks
 	// Returns string describing current plugin.  e.g., Admin-Mod.  
 	const char* GetPluginDescription(void) override
 	{
-		return CONF_NAME " (VSP) - Cvar Unlocker";
+		return SMEXT_CONF_NAME " (VSP) - Cvar Unlocker";
 	}
 
 	// Called any time a new level is started (after GameInit() also on level transitions within a game)

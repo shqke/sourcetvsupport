@@ -1,10 +1,11 @@
 #ifndef _INCLUDE_GAMEDATA_H_
 #define _INCLUDE_GAMEDATA_H_
 
-#include "config.h"
-#include <strtools.h>
+#include "smsdk_ext.h"
+
 #include <checksum_crc.h>
-#include <iserver.h>
+#include "sdk/engine/packed_entity.h"
+#include "sdk/public/tier1/mempool.h"
 
 // ref: https://partner.steamgames.com/downloads/list
 // Left 4 Dead - sdk v1.06
@@ -12,13 +13,7 @@
 
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 #include "steamworks_sdk_137/public/steam/steam_gameserver.h"
-#elif SOURCE_ENGINE == SE_LEFT4DEAD
-#define VERSION_SAFE_STEAM_API_INTERFACES
-//#include "steamworks_sdk_106/public/steam/steam_gameserver.h"
 #endif
-
-#include <IGameConfigs.h>
-using namespace SourceMod;
 
 class ISteamClient;
 class CHLTVServer;
@@ -47,7 +42,7 @@ public:
 	}
 
 public: // Steam API
-#if SOURCE_ENGINE != SE_LEFT4DEAD
+#if SOURCE_ENGINE == SE_LEFT4DEAD2
 	void* InvokeCreateInterface(const char* ver)
 	{
 		return reinterpret_cast<decltype(SteamInternal_CreateInterface)*>(pfn_SteamInternal_CreateInterface)(ver);
@@ -97,11 +92,17 @@ public:
 		return ptr_m_DemoRecorder_from_CHLTVServer(ptr_CHLTVServer_from_IHLTVServer(pIHLTVServer));
 	}
 
+	CClassMemoryPoolExt<PackedEntity>& ref_m_PackedEntitiesPool_from_CFrameSnapshotManager(void* pFrameSnapshotManager)
+	{
+		return *reinterpret_cast<CClassMemoryPoolExt<PackedEntity>*>(static_cast<byte*>(pFrameSnapshotManager) + offset_CFrameSnapshotManager_m_PackedEntitiesPool);
+	}
+
 protected:
 	int property_CBaseServer_stringTableCRC;
 	int offset_CHLTVServer_CClientFrameManager;
 	int offset_CHLTVServer_IHLTVServer;
 	int offset_CHLTVServer_m_DemoRecorder;
+	int offset_CFrameSnapshotManager_m_PackedEntitiesPool;
 
 protected:
 	void* pfn_CHLTVDemoRecorder_RecordStringTables;
@@ -112,6 +113,7 @@ protected:
 	void* pfn_CBaseClient_SendFullConnectEvent;
 	void* pfn_CSteam3Server_NotifyClientDisconnect;
 	void* pfn_CHLTVServer_AddNewFrame;
+	void* pfn_CFrameSnapshotManager_LevelChanged;
 
 protected:
 	int vtblindex_CBaseServer_GetChallengeNr;

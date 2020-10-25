@@ -161,70 +161,9 @@ public:
 	CClassMemoryPoolExt(int numElements, int growMode = GROW_FAST, int nAlignment = 0) :
 		CUtlMemoryPool(sizeof(T), numElements, growMode, MEM_ALLOC_CLASSNAME(T), nAlignment) {}
 
-	inline T*		Alloc()
-	{
-		T *pRet;
-
-		{
-			MEM_ALLOC_CREDIT_(MEM_ALLOC_CLASSNAME(T));
-			pRet = (T*)CUtlMemoryPool::Alloc();
-		}
-
-		if (pRet)
-		{
-			Construct(pRet);
-		}
-		return pRet;
-	}
-
-	inline T*		AllocZero()
-	{
-		T *pRet;
-
-		{
-			MEM_ALLOC_CREDIT_(MEM_ALLOC_CLASSNAME(T));
-			pRet = (T*)CUtlMemoryPool::AllocZero();
-		}
-
-		if (pRet)
-		{
-			Construct(pRet);
-		}
-		return pRet;
-	}
-
-	inline void	Free(T *pMem)
-	{
-		CUtlRBTree<void *> freeBlocks;
-		SetDefLessFunc(freeBlocks);
-
-		void *pCurFree = m_pHeadOfFreeList;
-		while (pCurFree != NULL)
-		{
-			freeBlocks.Insert(pCurFree);
-			pCurFree = *((void**)pCurFree);
-		}
-
-		for (CBlob *pCur = m_BlobHead.m_pNext; pCur != &m_BlobHead; pCur = pCur->m_pNext)
-		{
-			T *p = (T *)pCur->m_Data;
-			T *pLimit = (T *)(pCur->m_Data + pCur->m_NumBytes);
-			while (p < pLimit)
-			{
-				if (freeBlocks.Find(p) == freeBlocks.InvalidIndex())
-				{
-					Destruct(p);
-				}
-				p++;
-			}
-		}
-
-		CUtlMemoryPool::Clear();
-	}
-
 	inline void	Clear()
 	{
-		CUtlRBTree<void *> freeBlocks;
+		CUtlRBTree<void *, int> freeBlocks;
 		SetDefLessFunc(freeBlocks);
 
 		void *pCurFree = m_pHeadOfFreeList;
