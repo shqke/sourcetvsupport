@@ -1,4 +1,4 @@
-name: Build & Deploy
+name: build
 
 on:
   push:
@@ -33,13 +33,13 @@ jobs:
             
           - sm_version: "1.10"
             branch: "1.10-dev"
-          
+            
           - os: ubuntu-latest
             os_short: linux
-          
+            
           - os: windows-latest
             os_short: win
-          
+            
     steps:
       - name: Install (Linux)
         if: runner.os == 'Linux'
@@ -50,24 +50,18 @@ jobs:
           echo "CC=clang" >> $GITHUB_ENV
           echo "CXX=clang++" >> $GITHUB_ENV
           
-      - name: Install (Windows)
+      - name: Add msbuild to PATH (Windows)
         if: runner.os == 'Windows'
-        shell: cmd
-        run: |
-          :: See https://github.com/microsoft/vswhere/wiki/Find-VC
-          for /f "usebackq delims=*" %%i in (`"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do (
-            call "%%i"\Common7\Tools\vsdevcmd.bat -arch=x86 -host_arch=x64
-          )
-          
-          :: Loop over all environment variables and set them globally for future steps.
-          :: See: https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-commands-for-github-actions#setting-an-environment-variable
-          :: See: https://stackoverflow.com/questions/39183272/loop-through-all-environmental-variables-and-take-actions-depending-on-prefix
-          setlocal
-          for /f "delims== tokens=1,2" %%a in ('set') do (
-            echo %%a=%%b >> %GITHUB_ENV%
-          )
-          endlocal
+        uses: microsoft/setup-msbuild@v1.0.2
         
+      - name: Add VC to PATH (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          InstallDir=$(vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath)
+          Version=$(<"${InstallDir}/VC/Auxiliary/Build/Microsoft.VCToolsVersion.default.txt")
+          echo "${InstallDir}/VC/Tools/MSVC/${Version}/bin/HostX86/x86" >> $GITHUB_PATH
+          
       - name: Checking out SourceMod
         uses: actions/checkout@v2
         with:
@@ -75,20 +69,20 @@ jobs:
           ref: ${{ matrix.branch }}
           path: sourcemod-${{ matrix.sm_version }}
           submodules: recursive
-        
+          
       - name: Checking out MM:Source
         uses: actions/checkout@v2
         with:
           repository: alliedmodders/metamod-source
           ref: ${{ matrix.branch }}
           path: metamod-${{ matrix.sm_version }}
-        
+          
       - name: Checking out AMBuild
         uses: actions/checkout@v2
         with:
           repository: alliedmodders/ambuild
           path: ambuild
-        
+          
       - name: Setting up Python
         uses: actions/setup-python@v2
         
@@ -102,19 +96,19 @@ jobs:
           repository: alliedmodders/hl2sdk
           ref: l4d2
           path: hl2sdk-l4d2
-        
+          
       - name: Checking out hl2sdk-l4d
         uses: actions/checkout@v2
         with:
           repository: alliedmodders/hl2sdk
           ref: l4d
           path: hl2sdk-l4d
-        
+          
       - name: Checking out own repository
         uses: actions/checkout@v2
         with:
           path: sourcetvsupport
-        
+          
       - name: Compiling SourceTVSupport files
         working-directory: sourcetvsupport
         run: |
@@ -122,7 +116,7 @@ jobs:
           cd build
           python ../configure.py --enable-optimize --sm-path="${{ github.workspace }}/sourcemod-${{ matrix.sm_version }}" --mms-path="${{ github.workspace }}/metamod-${{ matrix.sm_version }}"
           ambuild
-        
+          
       - name: Uploading package
         uses: actions/upload-artifact@v2
         with:
