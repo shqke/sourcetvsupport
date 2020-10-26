@@ -1,4 +1,4 @@
-![Build Status](https://github.com/shqke/sourcetvsupport/workflows/Build%20&%20Deploy/badge.svg?branch=master)
+![Build Status](https://github.com/shqke/sourcetvsupport/workflows/build/badge.svg?branch=master)
 ![License](https://img.shields.io/github/license/shqke/sourcetvsupport)
 ![Release](https://img.shields.io/github/v/release/shqke/sourcetvsupport)
 
