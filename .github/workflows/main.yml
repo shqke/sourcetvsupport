@@ -14,13 +14,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest ]
+        os:
+          - ubuntu-latest
+          - windows-latest
+          
         sm_version:
           - "1.8"
           - "1.9"
           - "1.10"
           - "latest"
-  
+          
         include:
           - sm_version: latest
             branch: master
@@ -54,13 +57,19 @@ jobs:
         if: runner.os == 'Windows'
         uses: microsoft/setup-msbuild@v1.0.2
         
-      - name: Add VC to PATH (Windows)
+      - name: Install (Windows)
         if: runner.os == 'Windows'
-        shell: bash
+        shell: cmd
         run: |
-          InstallDir=$(vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath)
-          Version=$(<"${InstallDir}/VC/Auxiliary/Build/Microsoft.VCToolsVersion.default.txt")
-          echo "${InstallDir}/VC/Tools/MSVC/${Version}/bin/HostX86/x86" >> $GITHUB_PATH
+          :: See https://github.com/microsoft/vswhere/wiki/Find-VC
+          for /f "usebackq delims=*" %%i in (`vswhere -latest -property installationPath`) do (
+            call "%%i"\Common7\Tools\vsdevcmd.bat -arch=x86 -host_arch=x64
+          )
+          
+          :: Loop over all environment variables and make them global.
+          for /f "delims== tokens=1,2" %%a in ('set') do (
+            echo>>"%GITHUB_ENV%" %%a=%%b
+          )
           
       - name: Checking out SourceMod
         uses: actions/checkout@v2

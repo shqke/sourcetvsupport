@@ -5,7 +5,7 @@ project = HLTVSupport.HL2Project(builder, 'sourcetvsupport.ext')
 project.sources += [
   'extension.cpp',
   'gamedata.cpp',
-  os.path.join(HLTVSupport.sm_root, 'public', 'smsdk_ext.cpp'),
+  os.path.join('smsdk', 'smsdk_ext.cpp'),
   os.path.join(HLTVSupport.sm_root, 'public', 'CDetour', 'detours.cpp'),
   os.path.join(HLTVSupport.sm_root, 'public', 'asm', 'asm.c'),
 ]
