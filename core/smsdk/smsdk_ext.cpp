@@ -318,14 +318,14 @@ SMM_API void *PL_EXPOSURE(const char *name, int *code)
 	{
 		if (code)
 		{
-			*code = META_IFACE_OK;
+			*code = IFACE_OK;
 		}
 		return static_cast<void *>(g_pExtensionIface);
 	}
 
 	if (code)
 	{
-		*code = META_IFACE_FAILED;
+		*code = IFACE_FAILED;
 	}
 
 	return NULL;
