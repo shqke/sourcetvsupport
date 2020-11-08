@@ -1,11 +1,13 @@
 #ifndef _INCLUDE_GAMEDATA_H_
 #define _INCLUDE_GAMEDATA_H_
 
-#include "smsdk_ext.h"
+// include these early to let use debugging versions of the memory allocators
+#include "sdk/public/tier1/mempool.h"
+#include "sdk/engine/packed_entity.h"
+
+#include "smsdk/smsdk_ext.h"
 
 #include <checksum_crc.h>
-#include "sdk/engine/packed_entity.h"
-#include "sdk/public/tier1/mempool.h"
 
 // ref: https://partner.steamgames.com/downloads/list
 // Left 4 Dead - sdk v1.06

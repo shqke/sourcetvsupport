@@ -44,7 +44,7 @@ bool VSPPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameS
 		"sv_master_share_game_socket",
 	};
 
-	int handled = 0;
+	size_t handled = 0;
 	for (auto&& name : cvars) {
 		ConVar* pCvar = g_pCVar->FindVar(name);
 		if (pCvar == NULL) {
@@ -57,7 +57,7 @@ bool VSPPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameS
 		pCvar->RemoveFlags(FCVAR_DEVELOPMENTONLY);
 	}
 
-	printf(PLUGIN_LOG_PREFIX "SourceTV related convars (%d out of %d) were successfully exposed. Unloading...\n", handled, NELEMS(cvars));
+	printf(PLUGIN_LOG_PREFIX "SourceTV related convars (%u out of %u) were successfully exposed. Unloading...\n", handled, NELEMS(cvars));
 
 	return false;
 }

@@ -14,18 +14,10 @@
 
 #include <const.h>
 #include <utlvector.h>
+#include <dt_send.h>
 #include "changeframelist.h"
+#include "tier0/memdbgon.h"
 
-enum
-{
-	ENTITY_SENTINEL = 9999	// larger number than any real entity number
-};
-
-#define	FLAG_IS_COMPRESSED	(1<<31)
-
-class CSendProxyRecipients;
-class SendTable;
-class RecvTable;
 class ServerClass;
 class ClientClass;
 
@@ -51,7 +43,8 @@ public:
 		}
 	}
 
-	void FreeData() {
+	void FreeData()
+	{
 		if (m_pData)
 		{
 			free(m_pData);
@@ -65,11 +58,11 @@ public:
 	ClientClass	*m_pClientClass;	// Valid on the client
 
 	int			m_nEntityIndex;		// Entity index.
-	int			m_ReferenceCount;	// reference count;
+	CInterlockedInt			m_ReferenceCount;	// reference count;
 
 private:
 
-	CUtlVector<CSendProxyRecipients *>	m_Recipients;
+	CUtlVector<CSendProxyRecipients>	m_Recipients;
 
 	void				*m_pData;				// Packed data.
 	int					m_nBits;				// Number of bits used to encode.

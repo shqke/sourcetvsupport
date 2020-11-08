@@ -1,7 +1,6 @@
 #ifndef _INCLUDE_SOURCETV_SUPPORT_H_
 #define _INCLUDE_SOURCETV_SUPPORT_H_
 
-#include "smsdk_ext.h"
 #include "gamedata.h"
 
 #include <stdlib.h>

@@ -18,11 +18,9 @@
 #pragma once
 #endif
 
-#include "tier0/memalloc.h"
-#include "tier0/tslist.h"
-#include "tier0/platform.h"
 #include "tier1/utlvector.h"
 #include "tier1/utlrbtree.h"
+#include "tier0/memdbgon.h"
 
 //-----------------------------------------------------------------------------
 // Purpose: Optimized pool memory allocator
