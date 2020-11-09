@@ -280,14 +280,9 @@ class HLTVSupportConfig(object):
   def ConfigureForHL2(self, binary, sdk):
     compiler = binary.compiler
 
-    if sdk.name == 'episode1':
-      mms_path = os.path.join(self.mms_root, 'core-legacy')
-    else:
-      mms_path = os.path.join(self.mms_root, 'core')
-
     compiler.cxxincludes += [
-      os.path.join(mms_path),
-      os.path.join(mms_path, 'sourcehook'),
+      os.path.join(self.mms_root, 'core'),
+      os.path.join(self.mms_root, 'core', 'sourcehook'),
     ]
 
     defines = ['SE_' + PossibleSDKs[i].define + '=' + PossibleSDKs[i].code for i in PossibleSDKs]
@@ -299,25 +294,14 @@ class HLTVSupportConfig(object):
       ['public', 'mathlib'],
       ['public', 'vstdlib'],
       ['public', 'tier0'],
-      ['public', 'tier1']
+      ['public', 'tier1'],
+      ['public', 'game', 'server'],
+      ['public', 'toolframework'],
+      ['game', 'shared'],
+      ['common']
     ]
-    if sdk.name == 'episode1' or sdk.name == 'darkm':
-      paths.append(['public', 'dlls'])
-      paths.append(['game_shared'])
-    else:
-      paths.append(['public', 'game', 'server'])
-      paths.append(['public', 'toolframework'])
-      paths.append(['game', 'shared'])
-      paths.append(['common'])
 
     compiler.defines += ['SOURCE_ENGINE=' + sdk.code]
-
-    if sdk.name in ['sdk2013', 'bms'] and compiler.like('gcc'):
-      # The 2013 SDK already has these in public/tier0/basetypes.h
-      compiler.defines.remove('stricmp=strcasecmp')
-      compiler.defines.remove('_stricmp=strcasecmp')
-      compiler.defines.remove('_snprintf=snprintf')
-      compiler.defines.remove('_vsnprintf=vsnprintf')
 
     if compiler.like('msvc'):
       if compiler.version >= 1900:
@@ -326,14 +310,8 @@ class HLTVSupportConfig(object):
     else:
       compiler.defines += ['COMPILER_GCC']
 
-    # For everything after Swarm, this needs to be defined for entity networking
-    # to work properly with sendprop value changes.
-    if sdk.name in ['blade', 'insurgency', 'doi', 'csgo']:
-      compiler.defines += ['NETWORK_VARS_ENABLED']
-
-    if sdk.name in ['css', 'hl2dm', 'dods', 'sdk2013', 'bms', 'tf2', 'l4d', 'nucleardawn', 'l4d2']:
-      if builder.target_platform in ['linux', 'mac']:
-        compiler.defines += ['NO_HOOK_MALLOC', 'NO_MALLOC_OVERRIDE']
+    if builder.target_platform in ['linux', 'mac']:
+      compiler.defines += ['NO_HOOK_MALLOC', 'NO_MALLOC_OVERRIDE']
 
     for path in paths:
       compiler.cxxincludes += [os.path.join(sdk.path, *path)]

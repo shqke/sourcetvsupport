@@ -11,6 +11,7 @@ folder_list = [
   'addons/sourcetvsupport/bin',
   'addons/sourcemod/gamedata',
   'addons/sourcemod/extensions',
+  'addons/sourcemod/scripting',
 ]
 
 # Create the distribution folder hierarchy
@@ -41,6 +42,11 @@ CopyFiles('extra', 'addons/sourcemod/gamedata',
 # Autoload file
 CopyFiles('extra', 'addons/sourcemod/extensions',
  [ 'sourcetvsupport.autoload' ]
+)
+
+# Optional Pawn script
+CopyFiles('extra', 'addons/sourcemod/scripting',
+ [ 'camera_round_reset.sp' ]
 )
 
 # Copy extension
