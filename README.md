@@ -25,6 +25,10 @@ Installation
 3. Add `-hltv` and/or `+tv_enable 1` to srcds start parameters
 4. Set SourceTV related cvars into server config
 
+Also Recommended
+------
+[[L4D/2] Unlink Camera Entities](https://github.com/shqke/sp_public/tree/master/disable_cameras) - fixes multiple potential visual bugs on round restart, such as missing HUD and viewmodel for spectators after "finale vehicle escape" sequence team swap.
+
 Command Line Parameters
 ------
 - `+tv_enable 1` - Make SourceTV available on first map start (don't require to `changelevel`/`map`)
