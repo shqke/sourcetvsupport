@@ -51,6 +51,7 @@ Fixed Issues
 - (L4D) Server is now always respects value of cvar `sv_pausable`
 - SourceTV bot doesn't take a human slot and doesn't count as a potential voter
 - "CUtlRBTree overflow" on level transition
+- Broken demos on early recording (tv_autorecord)
 
 Known Issues
 ------

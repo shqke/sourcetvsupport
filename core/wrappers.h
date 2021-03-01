@@ -1,7 +1,6 @@
 #ifndef _INCLUDE_WRAPPERS_H_
 #define _INCLUDE_WRAPPERS_H_
 
-#include "smsdk/smsdk_ext.h"
 #include <extensions/IBinTools.h>
 
 #include <iserver.h>
@@ -12,9 +11,20 @@
 #include <iclient.h>
 #include <igameevents.h>
 
+extern IServerGameEnts* gameents;
+extern IPlayerInfoManager* playerinfomanager;
+
+// ref: https://partner.steamgames.com/downloads/list
+// Left 4 Dead - sdk v1.06
+// Left 4 Dead 2 - sdk v1.37
+
+#if SOURCE_ENGINE == SE_LEFT4DEAD2
+#include "steamworks_sdk_137/public/steam/steam_gameserver.h"
+#endif
+
 #include "sdk/engine/demo.h"
 
-extern IServerGameEnts* gameents;
+class CDetour;
 
 void DataTable_WriteClassInfosBuffer(ServerClass* pClasses, bf_write* pBuf)
 {
@@ -41,16 +51,42 @@ void DataTable_WriteClassInfosBuffer(ServerClass* pClasses, bf_write* pBuf)
 	}
 }
 
-namespace Static
-{
-	static void* pfn_DataTable_WriteSendTablesBuffer;
-	static void* pfn_SteamGameServer_GetHSteamPipe;
-	static void* pfn_SteamGameServer_GetHSteamUser;
-	static void* pfn_SteamInternal_CreateInterface;
-	static void* pfn_SteamInternal_GameServer_Init;
+extern int shookid_CHLTVDemoRecorder_RecordStringTables;
+extern int shookid_CHLTVDemoRecorder_RecordServerClasses;
+extern int shookid_SteamGameServer_LogOff;
+extern int shookid_CNetworkStringTable_GetStringUserData;
 
-	static CDetour* detour_SteamInternal_GameServer_Init;
-};
+extern void* pfn_DataTable_WriteSendTablesBuffer;
+extern void* pfn_SteamGameServer_GetHSteamPipe;
+extern void* pfn_SteamGameServer_GetHSteamUser;
+extern void* pfn_SteamInternal_CreateInterface;
+extern void* pfn_SteamInternal_GameServer_Init;
+
+extern CDetour* detour_SteamInternal_GameServer_Init;
+
+void InvokeDataTable_WriteSendTablesBuffer(ServerClass* pClasses, bf_write* buf)
+{
+	void DataTable_WriteSendTablesBuffer(ServerClass * pClasses, bf_write * buf);
+	return reinterpret_cast<decltype(DataTable_WriteSendTablesBuffer)*>(pfn_DataTable_WriteSendTablesBuffer)(pClasses, buf);
+}
+
+// Steam API
+#if SOURCE_ENGINE == SE_LEFT4DEAD2
+void* InvokeCreateInterface(const char* ver)
+{
+	return reinterpret_cast<decltype(SteamInternal_CreateInterface)*>(pfn_SteamInternal_CreateInterface)(ver);
+}
+
+HSteamPipe InvokeGetHSteamPipe()
+{
+	return reinterpret_cast<decltype(SteamGameServer_GetHSteamPipe)*>(pfn_SteamGameServer_GetHSteamPipe)();
+}
+
+HSteamUser InvokeGetHSteamUser()
+{
+	return reinterpret_cast<decltype(SteamGameServer_GetHSteamUser)*>(pfn_SteamGameServer_GetHSteamUser)();
+}
+#endif
 
 class CBaseClient :
 	public IGameEventListener2,
@@ -94,7 +130,7 @@ public:
 		return *reinterpret_cast<CRC32_t*>(reinterpret_cast<byte*>(this) + offset_stringTableCRC);
 	}
 
-	int GetChallengeNr(IServer* pServer, netadr_t& adr)
+	int GetChallengeNr(netadr_t& adr)
 	{
 		struct {
 			CBaseServer* pServer;
@@ -121,11 +157,7 @@ public:
 	}
 };
 
-class CHLTVServer :
-	public IGameEventListener2,
-	public CBaseServer,
-	public CClientFrameManager,
-	public IHLTVServer
+class CHLTVServer
 {
 public:
 	static int offset_m_DemoRecorder;
@@ -153,11 +185,18 @@ public:
 	}
 };
 
-class CGameServer :
-	public CBaseServer
+class CGameServer
 {
 public:
 	static int shookid_IsPausable;
+};
+
+class CSteam3Server
+{
+public:
+	static void* pfn_NotifyClientDisconnect;
+
+	static CDetour* detour_NotifyClientDisconnect;
 };
 
 class CFrameSnapshotManager
@@ -198,18 +237,23 @@ public:
 		return playerhelpers->GetGamePlayer(edict());
 	}
 
+	inline int& m_fFlags()
+	{
+		return *(int*)((byte*)(this) + sendprop_m_fFlags);
+	}
+
 	int GetFlags()
 	{
-		return *(int*)((byte*)(this) + CBasePlayer::sendprop_m_fFlags);
+		return m_fFlags();
 	}
 
 	void AddFlag(int flags)
 	{
-		*(int*)((byte*)(this) + CBasePlayer::sendprop_m_fFlags) |= flags;
+		m_fFlags() |= flags;
 
 		edict_t* pEdict = this->edict();
 		if (pEdict != NULL) {
-			gamehelpers->SetEdictStateChanged(pEdict, CBasePlayer::sendprop_m_fFlags);
+			gamehelpers->SetEdictStateChanged(pEdict, sendprop_m_fFlags);
 		}
 	}
 
@@ -242,11 +286,9 @@ CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 {
 	if (playerIndex > 0 && playerIndex <= playerhelpers->GetMaxClients()) {
 		IGamePlayer* pPlayer = playerhelpers->GetGamePlayer(playerIndex);
-		if (pPlayer == NULL) {
-			return NULL;
+		if (pPlayer != NULL) {
+			return (CBasePlayer*)gameents->EdictToBaseEntity(pPlayer->GetEdict());
 		}
-
-		return (CBasePlayer*)gameents->EdictToBaseEntity(pPlayer->GetEdict());
 	}
 
 	return NULL;

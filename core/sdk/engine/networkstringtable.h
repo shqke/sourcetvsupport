@@ -47,8 +47,7 @@ public:
 	const void* GetStringUserDataFixed(int stringNumber, int* length) const
 	{
 		INetworkStringDict* pDict = this->m_pItems;
-		if (m_pItemsClientSide && stringNumber < -1)
-		{
+		if (m_pItemsClientSide && stringNumber < -1) {
 			pDict = m_pItemsClientSide;
 			stringNumber = -stringNumber;
 		}

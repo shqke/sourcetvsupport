@@ -21,18 +21,8 @@ class CFrameSnapshot;
 class CClientFrame
 {
 public:
-
-	CClientFrame( void );
-	CClientFrame( int tickcount );
-	CClientFrame( CFrameSnapshot *pSnapshot );
 	virtual ~CClientFrame();
-	void Init( CFrameSnapshot *pSnapshot );
-	void Init( int tickcount );
 
-	// Accessors to snapshots. The data is protected because the snapshots are reference-counted.
-	inline CFrameSnapshot*	GetSnapshot() const { return m_pSnapshot; };
-	void					SetSnapshot( CFrameSnapshot *pSnapshot );
-	void					CopyFrame( CClientFrame &frame );
 	virtual bool		IsMemPoolAllocated() { return true; }
 
 public:
@@ -60,17 +50,14 @@ private:
 class CClientFrameManager
 {
 public:
-	CClientFrameManager(void) : m_ClientFramePool(MAX_CLIENT_FRAMES, CUtlMemoryPool::GROW_SLOW) { m_Frames = NULL; }
 	virtual ~CClientFrameManager(void) { DeleteClientFrames(-1); }
 
-	int				AddClientFrame(CClientFrame *pFrame); // returns current count
-	CClientFrame	*GetClientFrame(int nTick, bool bExact = true);
-	void			DeleteClientFrames(int nTick);	// -1 for all
-	int				CountClientFrames(void)	// returns number of frames in list
+	void DeleteClientFrames(int nTick);	// -1 for all
+	int CountClientFrames(void)	// returns number of frames in list
 	{
 		int count = 0;
 
-		CClientFrame *f = m_Frames;
+		CClientFrame* f = m_Frames;
 
 		while (f)
 		{
@@ -81,9 +68,9 @@ public:
 		return count;
 	}
 
-	void			RemoveOldestFrame(void)  // removes the oldest frame in list
+	void RemoveOldestFrame(void)  // removes the oldest frame in list
 	{
-		CClientFrame *frame = m_Frames; // first
+		CClientFrame* frame = m_Frames; // first
 
 		if (!frame)
 			return;	// no frames at all
@@ -94,14 +81,8 @@ public:
 		FreeFrame(frame);
 	}
 
-	bool			DeleteUnusedClientFrame(CClientFrame* pFrame);
-	int				GetOldestTick()const { return m_Frames ? m_Frames->tick_count : 0; }
-
-	CClientFrame*	AllocateFrame();
-	CClientFrame*	AllocateAndInitFrame(int nTick);
-
 private:
-	void			FreeFrame(CClientFrame* pFrame)
+	void FreeFrame(CClientFrame* pFrame)
 	{
 		if (pFrame->IsMemPoolAllocated())
 		{
@@ -114,7 +95,7 @@ private:
 	}
 
 
-	CClientFrame	*m_Frames;		// updates can be delta'ed from here
+	CClientFrame* m_Frames;		// updates can be delta'ed from here
 	CClassMemoryPoolExt< CClientFrame >	m_ClientFramePool;
 };
 

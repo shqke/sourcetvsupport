@@ -1,10 +1,11 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
 import os.path
 
-project = HLTVSupport.HL2Project(builder, 'sourcetvsupport.ext')
+projectName = 'sourcetvsupport'
+
+project = HLTVSupport.HL2Project(builder, projectName + '.ext')
 project.sources += [
   'extension.cpp',
-  'gamedata.cpp',
   os.path.join('smsdk', 'smsdk_ext.cpp'),
   os.path.join(HLTVSupport.sm_root, 'public', 'CDetour', 'detours.cpp'),
   os.path.join(HLTVSupport.sm_root, 'public', 'asm', 'asm.c'),
@@ -24,6 +25,6 @@ if os.path.isdir(libudis_folder):
 
 for sdk_name in HLTVSupport.sdks:
   sdk = HLTVSupport.sdks[sdk_name]
-  HLTVSupport.HL2Config(project, 'sourcetvsupport.ext.' + sdk.ext, sdk)
+  HLTVSupport.HL2Config(project, projectName + '.ext.' + sdk.ext, sdk)
 
 HLTVSupport.extensions += builder.Add(project)

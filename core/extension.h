@@ -1,7 +1,12 @@
 #ifndef _INCLUDE_SOURCETV_SUPPORT_H_
 #define _INCLUDE_SOURCETV_SUPPORT_H_
 
-#include "gamedata.h"
+#include "smsdk/smsdk_ext.h"
+
+// include these early to let use debugging versions of the memory allocators
+#include "sdk/public/tier1/mempool.h"
+#include "sdk/engine/packed_entity.h"
+#include "sdk/engine/clientframe.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -9,14 +14,18 @@
 // SDK
 #define TEAM_SPECTATOR			1	// spectator team
 
-#include <game/server/iplayerinfo.h>
-extern IPlayerInfoManager* playerinfomanager;
-
-#include <networkstringtabledefs.h>
-extern INetworkStringTableContainer* networkStringTableContainerServer;
-
 #include <netadr.h>
 #include <bitbuf.h>
+#include <ihltv.h>
+
+#include <os/am-shared-library.h>
+#include <os/am-path.h>
+
+#if defined _WIN32
+#	define LIBSTEAMAPI_FILE "steam_api.dll"
+#else
+#	define LIBSTEAMAPI_FILE "libsteam_api.so"
+#endif
 
 #include "sdk/engine/hltvdemo.h"
 
@@ -34,52 +43,26 @@ enum ESocketIndex_t
 
 // Metamod Source
 #include <sourcehook.h>
-using namespace SourceHook;
-
-// SourceMod
-#include <extensions/ISDKTools.h>
-extern ISDKTools* sdktools;
-
-#include <extensions/IBinTools.h>
-extern IBinTools* bintools;
-
-class CDetour;
 
 class SMExtension :
-	public CGameData,
 	public SDKExtension
 {
-public:
-	SMExtension();
-
 public:
 	void Load();
 	void Unload();
 
 private:
+	bool SetupFromGameConfig(IGameConfig* gc, char* error, int maxlength);
+	bool SetupFromSteamAPILibrary(char* error, int maxlength);
 	bool CreateDetours(char* error, size_t maxlength);
-
-private:
-	CDetour* detour_CSteam3Server_NotifyClientDisconnect;
-
-public:
-	int shookid_CHLTVDemoRecorder_RecordStringTables;
-	int shookid_CHLTVDemoRecorder_RecordServerClasses;
-	int shookid_SteamGameServer_LogOff;
-	int shookid_CGameServer_IsPausable;
-	int shookid_CNetworkStringTable_GetStringUserData;
 
 public:
 	void OnGameServer_Init();
 	void OnGameServer_Shutdown();
-	void OnSetHLTVServer(IHLTVServer* pHLTVServer);
-
-public: // Wrappers for call wrappers
-	int GetChallengeNr(IServer* sv, netadr_t& adr);
-	int GetChallengeType(IServer* sv, netadr_t& adr);
+	void OnSetHLTVServer(IHLTVServer* pIHLTVServer);
 
 public: // SourceHook callbacks
-	void Handler_IHLTVDirector_SetHLTVServer(IHLTVServer* pHLTVServer);
+	void Handler_CHLTVDirector_SetHLTVServer(IHLTVServer* pHLTVServer);
 	void Handler_CHLTVDemoRecorder_RecordStringTables();
 	void Handler_CHLTVDemoRecorder_RecordServerClasses(ServerClass* pClasses);
 	void Handler_CHLTVServer_ReplyChallenge(netadr_s& adr, CBitRead& inmsg);
@@ -136,7 +119,7 @@ public: // IExtensionInterface
 	 * @return					True to continue, false to unload this
 	 * 							extension afterwards.
 	 */
-	virtual bool QueryInterfaceDrop(SMInterface* pInterface) override;
+	bool QueryInterfaceDrop(SMInterface* pInterface) override;
 
 	/**
 	 * @brief Notifies the extension that an external interface it uses is being removed.
@@ -146,7 +129,7 @@ public: // IExtensionInterface
 	 *							be queried using SMInterface functions unless
 	 *							it can be verified to match an existing
 	 */
-	virtual void NotifyInterfaceDrop(SMInterface* pInterface) override;
+	void NotifyInterfaceDrop(SMInterface* pInterface) override;
 
 	/**
 	 * @brief Return false to tell Core that your extension should be considered unusable.
@@ -155,7 +138,7 @@ public: // IExtensionInterface
 	 * @param maxlength			Size of error buffer.
 	 * @return					True on success, false otherwise.
 	 */
-	virtual bool QueryRunning(char* error, size_t maxlength) override;
+	bool QueryRunning(char* error, size_t maxlength) override;
 };
 
 #endif // _INCLUDE_SOURCETV_SUPPORT_H_

@@ -37,12 +37,6 @@
 				"linux"		"@_Z31DataTable_WriteSendTablesBufferP11ServerClassP8bf_write"
 			}
 			
-			"DataTable_WriteClassInfosBuffer"
-			{
-				"library"	"engine"
-				"linux"		"@_Z31DataTable_WriteClassInfosBufferP11ServerClassP8bf_write"
-			}
-			
 			"CBaseServer::IsExclusiveToLobbyConnections"
 			{
 				"library"	"engine"

@@ -17,12 +17,6 @@
 
 class CHLTVDemoRecorder : public IDemoRecorder
 {
-public:
-	virtual ~CHLTVDemoRecorder();
-
-	// Convert to demo recorder
-	IDemoRecorder* GetDemoRecorder() { return this; }
-
 private:
 	CDemoFile		m_DemoFile;
 	bool			m_bIsRecording;
