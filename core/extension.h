@@ -9,16 +9,6 @@
 // SDK
 #define TEAM_SPECTATOR			1	// spectator team
 
-#include <iserver.h>
-extern IServer* sv;
-
-#include <ihltv.h>
-extern IHLTVServer* ihltv;
-extern IServer* hltv;
-
-#include <ihltvdirector.h>
-extern IHLTVDirector* hltvdirector;
-
 #include <game/server/iplayerinfo.h>
 extern IPlayerInfoManager* playerinfomanager;
 
@@ -26,10 +16,7 @@ extern IPlayerInfoManager* playerinfomanager;
 extern INetworkStringTableContainer* networkStringTableContainerServer;
 
 #include <netadr.h>
-
-// Engine
-#include "sdk/public/engine/inetsupport.h"
-extern INetSupport* g_pNetSupport;
+#include <bitbuf.h>
 
 #include "sdk/engine/hltvdemo.h"
 
@@ -73,24 +60,14 @@ private:
 	bool CreateDetours(char* error, size_t maxlength);
 
 private:
-	CDetour* detour_SteamInternal_GameServer_Init;
-	CDetour* detour_CBaseServer_IsExclusiveToLobbyConnections;
-	CDetour* detour_CBaseClient_SendFullConnectEvent;
 	CDetour* detour_CSteam3Server_NotifyClientDisconnect;
-	CDetour* detour_CHLTVServer_AddNewFrame;
-	CDetour* detour_CFrameSnapshotManager_LevelChanged;
-
-	ICallWrapper* vcall_CBaseServer_GetChallengeNr;
-	ICallWrapper* vcall_CBaseServer_GetChallengeType;
 
 public:
-	int shookid_IDemoRecorder_RecordStringTables;
-	int shookid_IDemoRecorder_RecordServerClasses;
-	int shookid_CBaseServer_ReplyChallenge;
+	int shookid_CHLTVDemoRecorder_RecordStringTables;
+	int shookid_CHLTVDemoRecorder_RecordServerClasses;
 	int shookid_SteamGameServer_LogOff;
-	int shookid_IServer_IsPausable;
-
-	int sendprop_CTerrorPlayer_m_fFlags;
+	int shookid_CGameServer_IsPausable;
+	int shookid_CNetworkStringTable_GetStringUserData;
 
 public:
 	void OnGameServer_Init();
@@ -103,11 +80,12 @@ public: // Wrappers for call wrappers
 
 public: // SourceHook callbacks
 	void Handler_IHLTVDirector_SetHLTVServer(IHLTVServer* pHLTVServer);
-	void Handler_IDemoRecorder_RecordStringTables();
-	void Handler_IDemoRecorder_RecordServerClasses(ServerClass* pClasses);
-	void Handler_CBaseServer_ReplyChallenge(netadr_s& adr, CBitRead& inmsg);
+	void Handler_CHLTVDemoRecorder_RecordStringTables();
+	void Handler_CHLTVDemoRecorder_RecordServerClasses(ServerClass* pClasses);
+	void Handler_CHLTVServer_ReplyChallenge(netadr_s& adr, CBitRead& inmsg);
 	void Handler_ISteamGameServer_LogOff();
-	bool Handler_IServer_IsPausable() const;
+	bool Handler_CGameServer_IsPausable() const;
+	const void* Handler_CNetworkStringTable_GetStringUserData(int stringNumber, int* length) const;
 
 public: // SDKExtension
 	/**

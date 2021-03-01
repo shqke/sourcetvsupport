@@ -1,0 +1,255 @@
+#ifndef _INCLUDE_WRAPPERS_H_
+#define _INCLUDE_WRAPPERS_H_
+
+#include "smsdk/smsdk_ext.h"
+#include <extensions/IBinTools.h>
+
+#include <iserver.h>
+#include <ihltvdirector.h>
+#include <ihltv.h>
+#include <server_class.h>
+#include <game/server/iplayerinfo.h>
+#include <iclient.h>
+#include <igameevents.h>
+
+#include "sdk/engine/demo.h"
+
+extern IServerGameEnts* gameents;
+
+void DataTable_WriteClassInfosBuffer(ServerClass* pClasses, bf_write* pBuf)
+{
+	int count = 0;
+	ServerClass* pClass = pClasses;
+
+	// first count total number of classes in list
+	while (pClass != NULL) {
+		pClass = pClass->m_pNext;
+		count++;
+	}
+
+	// write number of classes
+	pBuf->WriteShort(count);
+
+	pClass = pClasses; // go back to first class
+
+	// write each class info
+	while (pClass != NULL) {
+		pBuf->WriteShort(pClass->m_ClassID);
+		pBuf->WriteString(pClass->m_pNetworkName);
+		pBuf->WriteString(pClass->m_pTable->GetName());
+		pClass = pClass->m_pNext;
+	}
+}
+
+namespace Static
+{
+	static void* pfn_DataTable_WriteSendTablesBuffer;
+	static void* pfn_SteamGameServer_GetHSteamPipe;
+	static void* pfn_SteamGameServer_GetHSteamUser;
+	static void* pfn_SteamInternal_CreateInterface;
+	static void* pfn_SteamInternal_GameServer_Init;
+
+	static CDetour* detour_SteamInternal_GameServer_Init;
+};
+
+class CBaseClient :
+	public IGameEventListener2,
+	public IClient,
+	public IClientMessageHandler
+{
+public:
+	static void* pfn_SendFullConnectEvent;
+
+	static CDetour* detour_SendFullConnectEvent;
+};
+
+class CBaseServer
+	: public IServer
+{
+public:
+	static int offset_stringTableCRC;
+	static int vtblindex_GetChallengeNr;
+	static int vtblindex_GetChallengeType;
+	static int vtblindex_ReplyChallenge;
+
+	static void* pfn_IsExclusiveToLobbyConnections;
+
+	static CDetour* detour_IsExclusiveToLobbyConnections;
+
+	static ICallWrapper* vcall_GetChallengeNr;
+	static ICallWrapper* vcall_GetChallengeType;
+
+	static CBaseServer* FromIServer(IServer* pServer)
+	{
+		return reinterpret_cast<CBaseServer*>(pServer);
+	}
+
+	static CBaseServer* FromIHLTVServer(IHLTVServer* pHLTVServer)
+	{
+		return FromIServer(pHLTVServer->GetBaseServer());
+	}
+
+	CRC32_t& stringTableCRC()
+	{
+		return *reinterpret_cast<CRC32_t*>(reinterpret_cast<byte*>(this) + offset_stringTableCRC);
+	}
+
+	int GetChallengeNr(IServer* pServer, netadr_t& adr)
+	{
+		struct {
+			CBaseServer* pServer;
+			netadr_s* adr;
+		} stack{ this, &adr };
+
+		int ret;
+		vcall_GetChallengeNr->Execute(&stack, &ret);
+
+		return ret;
+	}
+
+	int GetChallengeType(netadr_t& adr)
+	{
+		struct {
+			CBaseServer* pServer;
+			netadr_s* adr;
+		} stack{ this, &adr };
+
+		int ret;
+		vcall_GetChallengeType->Execute(&stack, &ret);
+
+		return ret;
+	}
+};
+
+class CHLTVServer :
+	public IGameEventListener2,
+	public CBaseServer,
+	public CClientFrameManager,
+	public IHLTVServer
+{
+public:
+	static int offset_m_DemoRecorder;
+	static int offset_CClientFrameManager;
+
+	static int shookid_ReplyChallenge;
+
+	static void* pfn_AddNewFrame;
+
+	static CDetour* detour_AddNewFrame;
+
+	CHLTVDemoRecorder& GetDemoRecorder()
+	{
+		return *reinterpret_cast<CHLTVDemoRecorder*>(reinterpret_cast<byte*>(this) + offset_m_DemoRecorder);
+	}
+
+	CClientFrameManager& GetClientFrameManager()
+	{
+		return *reinterpret_cast<CClientFrameManager*>(reinterpret_cast<byte*>(this) + offset_CClientFrameManager);
+	}
+
+	static CHLTVServer* FromBaseServer(CBaseServer* pServer)
+	{
+		return reinterpret_cast<CHLTVServer*>(reinterpret_cast<byte*>(pServer) - 4);
+	}
+};
+
+class CGameServer :
+	public CBaseServer
+{
+public:
+	static int shookid_IsPausable;
+};
+
+class CFrameSnapshotManager
+{
+public:
+	static int offset_m_PackedEntitiesPool;
+
+	static void* pfn_RecordStringTables;
+	static void* pfn_RecordServerClasses;
+
+	static void* pfn_LevelChanged;
+
+	static CDetour* detour_LevelChanged;
+
+	CClassMemoryPoolExt<PackedEntity>& m_PackedEntitiesPool()
+	{
+		return *reinterpret_cast<CClassMemoryPoolExt<PackedEntity>*>(reinterpret_cast<byte*>(this) + offset_m_PackedEntitiesPool);
+	}
+};
+
+class CBaseEntity
+{
+public:
+	edict_t* edict()
+	{
+		return gameents->BaseEntityToEdict(this);
+	}
+};
+
+class CBasePlayer :
+	public CBaseEntity
+{
+public:
+	static int sendprop_m_fFlags;
+
+	IGamePlayer* GetIGamePlayer()
+	{
+		return playerhelpers->GetGamePlayer(edict());
+	}
+
+	int GetFlags()
+	{
+		return *(int*)((byte*)(this) + CBasePlayer::sendprop_m_fFlags);
+	}
+
+	void AddFlag(int flags)
+	{
+		*(int*)((byte*)(this) + CBasePlayer::sendprop_m_fFlags) |= flags;
+
+		edict_t* pEdict = this->edict();
+		if (pEdict != NULL) {
+			gamehelpers->SetEdictStateChanged(pEdict, CBasePlayer::sendprop_m_fFlags);
+		}
+	}
+
+	bool IsHLTV()
+	{
+		IGamePlayer* pGamePlayer = GetIGamePlayer();
+		if (pGamePlayer == NULL) {
+			return false;
+		}
+
+		return pGamePlayer->IsSourceTV();
+	}
+
+	void ChangeTeam(int teamIndex)
+	{
+		IPlayerInfo* pPlayerInfo = playerinfomanager->GetPlayerInfo(edict());
+		if (pPlayerInfo == NULL) {
+			return;
+		}
+
+		if (pPlayerInfo->GetTeamIndex() == teamIndex) {
+			return;
+		}
+
+		pPlayerInfo->ChangeTeam(teamIndex);
+	}
+};
+
+CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
+{
+	if (playerIndex > 0 && playerIndex <= playerhelpers->GetMaxClients()) {
+		IGamePlayer* pPlayer = playerhelpers->GetGamePlayer(playerIndex);
+		if (pPlayer == NULL) {
+			return NULL;
+		}
+
+		return (CBasePlayer*)gameents->EdictToBaseEntity(pPlayer->GetEdict());
+	}
+
+	return NULL;
+}
+
+#endif // _INCLUDE_WRAPPERS_H_

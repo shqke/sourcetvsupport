@@ -38,7 +38,7 @@ bool VSPPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameS
 		"tv_allow_camera_man",
 		"tv_allow_static_shots",
 		"tv_delay",
-		"tv_delaymapchange",
+		//"tv_delaymapchange",
 
 		"sv_hibernate_when_empty",
 		"sv_master_share_game_socket",

@@ -16,12 +16,6 @@
 				"windows"	"472"
 			}
 
-			"CHLTVServer::IHLTVServer"
-			{
-				"linux"		"516"
-				"windows"	"528"
-			}
-
 			"CHLTVServer::m_DemoRecorder"
 			{
 				"linux"		"19460"
@@ -37,18 +31,6 @@
 		
 		"Signatures"
 		{
-			"CHLTVDemoRecorder::RecordStringTables"
-			{
-				"library"	"engine"
-				"linux"		"@_ZN17CHLTVDemoRecorder18RecordStringTablesEv"
-			}
-			
-			"CHLTVDemoRecorder::RecordServerClasses"
-			{
-				"library"	"engine"
-				"linux"		"@_ZN17CHLTVDemoRecorder19RecordServerClassesEP11ServerClass"
-			}
-			
 			"DataTable_WriteSendTablesBuffer"
 			{
 				"library"	"engine"
@@ -73,12 +55,6 @@
 				"linux"		"@_ZN13CSteam3Server22NotifyClientDisconnectEP11CBaseClient"
 			}
 			
-			"CBaseClient::SendFullConnectEvent"
-			{
-				"library"	"engine"
-				"linux"		"@_ZN11CBaseClient20SendFullConnectEventEv"
-			}
-			
 			"CHLTVServer::AddNewFrame"
 			{
 				"library"	"engine"
@@ -89,6 +65,12 @@
 			{
 				"library"	"engine"
 				"linux"		"@_ZN21CFrameSnapshotManager12LevelChangedEv"
+			}
+			
+			"CBaseClient::SendFullConnectEvent"
+			{
+				"library"	"engine"
+				"linux"		"@_ZN11CBaseClient20SendFullConnectEventEv"
 			}
 		}
 	}
@@ -127,14 +109,6 @@
 				"windows"	"\x53\x56\x57\x8B\x7C\x24\x10\x57\xE8\x2A\x2A\x2A\x2A\x8B\x74\x24\x18"
 			}
 			
-			"DataTable_WriteClassInfosBuffer"
-			{
-				"library"	"engine"
-				// Next call in CHLTVDemoRecorder::RecordServerClasses after DataTable_WriteSendTablesBuffer
-				// 56 8B 74 24 08 33 C9 85 F6
-				"windows"	"\x56\x8B\x74\x24\x08\x33\xC9\x85\xF6"
-			}
-			
 			"CBaseServer::IsExclusiveToLobbyConnections"
 			{
 				"library"	"engine"
@@ -150,13 +124,6 @@
 				// First call that takes 2 arguments
 				// 83 EC 18 53 8B 5C 24 20 85 DB
 				"windows"	"\x83\xEC\x18\x53\x8B\x5C\x24\x20\x85\xDB"
-			}
-			
-			// unused
-			"CBaseClient::SendFullConnectEvent"
-			{
-				"library"	"engine"
-				"windows"	""
 			}
 			
 			"CHLTVServer::AddNewFrame"
@@ -211,14 +178,6 @@
 				"windows"	"\x55\x8B\xEC\x53\x8B\x5D\x08\x56\x57\x53\xE8\x2A\x2A\x2A\x2A\x8B\x75\x0C"
 			}
 			
-			"DataTable_WriteClassInfosBuffer"
-			{
-				"library"	"engine"
-				// Next call in CHLTVDemoRecorder::RecordServerClasses after DataTable_WriteSendTablesBuffer
-				// 55 8B EC 56 8B 75 08 33 C9
-				"windows"	"\x55\x8B\xEC\x56\x8B\x75\x08\x33\xC9"
-			}
-			
 			"CBaseServer::IsExclusiveToLobbyConnections"
 			{
 				"library"	"engine"
@@ -236,14 +195,6 @@
 				"windows"	"\x55\x8B\xEC\x83\xEC\x1C\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x53\x56\x8B\x75\x08"
 			}
 			
-			"CBaseClient::SendFullConnectEvent"
-			{
-				"library"	"engine"
-				// xref to string "player_connect_full"
-				// 56 57 8B F9 8B 0D ? ? ? ? 8B 01 8B 50 18
-				"windows"	"\x56\x57\x8B\xF9\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x01\x8B\x50\x18"
-			}
-			
 			"CHLTVServer::AddNewFrame"
 			{
 				"library"	"engine"
@@ -258,6 +209,14 @@
 				// Second method of virtual table for "CFrameSnapshotManager"
 				// 56 8B F1 8D 4E 58 E8 ? ? ? ? 8D 4E 28
 				"windows"	"\x56\x8B\xF1\x8D\x4E\x58\xE8\x2A\x2A\x2A\x2A\x8D\x4E\x28"
+			}
+			
+			"CBaseClient::SendFullConnectEvent"
+			{
+				"library"	"engine"
+				// xref to string "player_connect_full"
+				// 56 57 8B F9 8B 0D ? ? ? ? 8B 01 8B 50 18
+				"windows"	"\x56\x57\x8B\xF9\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x01\x8B\x50\x18"
 			}
 		}
 	}

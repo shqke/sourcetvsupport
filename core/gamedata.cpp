@@ -1,4 +1,5 @@
 #include "gamedata.h"
+#include "wrappers.h"
 
 #include <os/am-shared-library.h>
 #include <os/am-path.h>
@@ -15,14 +16,13 @@ bool CGameData::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlength)
 		const char* key;
 		int& offset;
 	} s_offsets[] = {
-		{ "CBaseServer::stringTableCRC", property_CBaseServer_stringTableCRC },
-		{ "CHLTVServer::CClientFrameManager", offset_CHLTVServer_CClientFrameManager },
-		{ "CHLTVServer::IHLTVServer", offset_CHLTVServer_IHLTVServer },
-		{ "CHLTVServer::m_DemoRecorder", offset_CHLTVServer_m_DemoRecorder },
-		{ "CFrameSnapshotManager::m_PackedEntitiesPool", offset_CFrameSnapshotManager_m_PackedEntitiesPool },
-		{ "CBaseServer::GetChallengeNr", vtblindex_CBaseServer_GetChallengeNr },
-		{ "CBaseServer::GetChallengeType", vtblindex_CBaseServer_GetChallengeType },
-		{ "CBaseServer::ReplyChallenge", vtblindex_CBaseServer_ReplyChallenge },
+		{ "CBaseServer::stringTableCRC", CBaseServer::offset_stringTableCRC },
+		{ "CHLTVServer::CClientFrameManager", CHLTVServer::offset_CClientFrameManager },
+		{ "CHLTVServer::m_DemoRecorder", CHLTVServer::offset_m_DemoRecorder },
+		{ "CFrameSnapshotManager::m_PackedEntitiesPool", CFrameSnapshotManager::offset_m_PackedEntitiesPool },
+		{ "CBaseServer::GetChallengeNr", CBaseServer::vtblindex_GetChallengeNr },
+		{ "CBaseServer::GetChallengeType", CBaseServer::vtblindex_GetChallengeType },
+		{ "CBaseServer::ReplyChallenge", CBaseServer::vtblindex_ReplyChallenge },
 	};
 
 	for (auto&& el : s_offsets) {
@@ -38,7 +38,6 @@ bool CGameData::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlength)
 		void*& address;
 	} s_sigs[] = {
 		{ "DataTable_WriteSendTablesBuffer", pfn_DataTable_WriteSendTablesBuffer },
-		{ "DataTable_WriteClassInfosBuffer", pfn_DataTable_WriteClassInfosBuffer },
 		{ "CBaseServer::IsExclusiveToLobbyConnections", pfn_CBaseServer_IsExclusiveToLobbyConnections },
 		{ "CSteam3Server::NotifyClientDisconnect", pfn_CSteam3Server_NotifyClientDisconnect },
 		{ "CHLTVServer::AddNewFrame", pfn_CHLTVServer_AddNewFrame },

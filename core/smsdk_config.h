@@ -34,7 +34,7 @@ bug##: hltv sends no update for clients
 // Configuration
 #define SMEXT_CONF_NAME			"SourceTV Support"
 #define SMEXT_CONF_DESCRIPTION	"Restores broadcasting/recording SourceTV features in Left 4 Dead engine"
-#define SMEXT_CONF_VERSION		"0.9"
+#define SMEXT_CONF_VERSION		"1.0"
 #define SMEXT_CONF_AUTHOR		"Evgeniy \"shqke\" Kazakov"
 #define SMEXT_CONF_URL			"https://github.com/shqke/sourcetvsupport"
 #define SMEXT_CONF_LOGTAG		"STVS"
