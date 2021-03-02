@@ -130,6 +130,11 @@ public:
 		return *reinterpret_cast<CRC32_t*>(reinterpret_cast<byte*>(this) + offset_stringTableCRC);
 	}
 
+	INetworkStringTableContainer* m_StringTables()
+	{
+		return *reinterpret_cast<INetworkStringTableContainer**>(reinterpret_cast<byte*>(this) + offset_stringTableCRC + 4);
+	}
+
 	int GetChallengeNr(netadr_t& adr)
 	{
 		struct {

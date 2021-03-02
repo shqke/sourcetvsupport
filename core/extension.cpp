@@ -495,9 +495,9 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 	shookid_CHLTVDemoRecorder_RecordStringTables = SH_ADD_HOOK(CHLTVDemoRecorder, RecordStringTables, &demoRecorder, SH_MEMBER(this, &SMExtension::Handler_CHLTVDemoRecorder_RecordStringTables), false);
 	shookid_CHLTVDemoRecorder_RecordServerClasses = SH_ADD_HOOK(CHLTVDemoRecorder, RecordServerClasses, &demoRecorder, SH_MEMBER(this, &SMExtension::Handler_CHLTVDemoRecorder_RecordServerClasses), false);
 
-	INetworkStringTable* pStringTableGameRules = networkStringTableContainerServer->FindTable("GameRulesCreation");
+	INetworkStringTable* pStringTableGameRules = pServer->m_StringTables()->FindTable("GameRulesCreation");
 	if (pStringTableGameRules != NULL) {
-		shookid_CNetworkStringTable_GetStringUserData = SH_ADD_VPHOOK(INetworkStringTable, GetStringUserData, pStringTableGameRules, SH_MEMBER(this, &SMExtension::Handler_CNetworkStringTable_GetStringUserData), false);
+		shookid_CNetworkStringTable_GetStringUserData = SH_ADD_HOOK(INetworkStringTable, GetStringUserData, pStringTableGameRules, SH_MEMBER(this, &SMExtension::Handler_CNetworkStringTable_GetStringUserData), false);
 	}
 
 	// bug##: in CHLTVServer::StartMaster, bot is executing "spectate" command which does nothing and it keeps him in unassigned team (index 0)
