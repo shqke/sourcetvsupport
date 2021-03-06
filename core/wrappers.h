@@ -10,6 +10,7 @@
 #include <game/server/iplayerinfo.h>
 #include <iclient.h>
 #include <igameevents.h>
+#include <networkstringtabledefs.h>
 
 extern IServerGameEnts* gameents;
 extern IPlayerInfoManager* playerinfomanager;
@@ -107,6 +108,7 @@ public:
 	static int vtblindex_GetChallengeNr;
 	static int vtblindex_GetChallengeType;
 	static int vtblindex_ReplyChallenge;
+	static int vtblindex_FillServerInfo;
 
 	static void* pfn_IsExclusiveToLobbyConnections;
 
@@ -168,7 +170,11 @@ public:
 	static int offset_m_DemoRecorder;
 	static int offset_CClientFrameManager;
 
+	static int vtblindex_FillServerInfo;
+
 	static int shookid_ReplyChallenge;
+	static int shookid_FillServerInfo;
+	static int shookid_thunk_FillServerInfo;
 
 	static void* pfn_AddNewFrame;
 

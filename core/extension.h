@@ -28,6 +28,7 @@
 #endif
 
 #include "sdk/engine/hltvdemo.h"
+#include "sdk/common/netmessages.h"
 
 enum ESocketIndex_t
 {
@@ -69,6 +70,7 @@ public: // SourceHook callbacks
 	void Handler_ISteamGameServer_LogOff();
 	bool Handler_CGameServer_IsPausable() const;
 	const void* Handler_CNetworkStringTable_GetStringUserData(int stringNumber, int* length) const;
+	void Handler_CHLTVServer_FillServerInfo(SVC_ServerInfo& serverinfo);
 
 public: // SDKExtension
 	/**

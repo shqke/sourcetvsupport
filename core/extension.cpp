@@ -6,7 +6,6 @@
 
 #include <am-string.h>
 #include <checksum_crc.h>
-#include <networkstringtabledefs.h>
 #include <extensions/IBinTools.h>
 #include <extensions/ISDKTools.h>
 
@@ -26,13 +25,17 @@ int CBaseServer::offset_stringTableCRC = 0;
 int CBaseServer::vtblindex_GetChallengeNr = 0;
 int CBaseServer::vtblindex_GetChallengeType = 0;
 int CBaseServer::vtblindex_ReplyChallenge = 0;
+int CBaseServer::vtblindex_FillServerInfo = 0;
 void* CBaseServer::pfn_IsExclusiveToLobbyConnections = NULL;
 CDetour* CBaseServer::detour_IsExclusiveToLobbyConnections = NULL;
 ICallWrapper* CBaseServer::vcall_GetChallengeNr = NULL;
 ICallWrapper* CBaseServer::vcall_GetChallengeType = NULL;
 int CHLTVServer::offset_m_DemoRecorder = 0;
 int CHLTVServer::offset_CClientFrameManager = 0;
+int CHLTVServer::vtblindex_FillServerInfo = 0;
 int CHLTVServer::shookid_ReplyChallenge = 0;
+int CHLTVServer::shookid_FillServerInfo = 0;
+int CHLTVServer::shookid_thunk_FillServerInfo = 0;
 void* CHLTVServer::pfn_AddNewFrame = NULL;
 CDetour* CHLTVServer::detour_AddNewFrame = NULL;
 int CGameServer::shookid_IsPausable = 0;
@@ -62,6 +65,8 @@ SH_DECL_HOOK1_void(IHLTVDirector, SetHLTVServer, SH_NOATTRIB, 0, IHLTVServer*);
 SH_DECL_HOOK0_void(CHLTVDemoRecorder, RecordStringTables, SH_NOATTRIB, 0);
 SH_DECL_HOOK1_void(CHLTVDemoRecorder, RecordServerClasses, SH_NOATTRIB, 0, ServerClass*);
 SH_DECL_MANUALHOOK2_void(CBaseServer_ReplyChallenge, 0, 0, 0, netadr_s&, CBitRead&);
+SH_DECL_MANUALHOOK1_void(CBaseServer_FillServerInfo, 0, 0, 0, SVC_ServerInfo&);
+SH_DECL_MANUALHOOK1_void(CHLTVServer_FillServerInfo, 0, 0, 0, SVC_ServerInfo&);
 SH_DECL_HOOK0(IServer, IsPausable, const, 0, bool);
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 SH_DECL_HOOK0_void(ISteamGameServer, LogOff, SH_NOATTRIB, 0);
@@ -305,6 +310,8 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		{ "CBaseServer::GetChallengeNr", CBaseServer::vtblindex_GetChallengeNr },
 		{ "CBaseServer::GetChallengeType", CBaseServer::vtblindex_GetChallengeType },
 		{ "CBaseServer::ReplyChallenge", CBaseServer::vtblindex_ReplyChallenge },
+		{ "CBaseServer::FillServerInfo", CBaseServer::vtblindex_FillServerInfo },
+		{ "CHLTVServer::FillServerInfo", CHLTVServer::vtblindex_FillServerInfo },
 	};
 
 	for (auto&& el : s_offsets) {
@@ -471,6 +478,12 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 	SH_REMOVE_HOOK_ID(CHLTVServer::shookid_ReplyChallenge);
 	CHLTVServer::shookid_ReplyChallenge = 0;
 
+	SH_REMOVE_HOOK_ID(CHLTVServer::shookid_thunk_FillServerInfo);
+	CHLTVServer::shookid_thunk_FillServerInfo = 0;
+
+	SH_REMOVE_HOOK_ID(CHLTVServer::shookid_FillServerInfo);
+	CHLTVServer::shookid_FillServerInfo = 0;
+
 	SH_REMOVE_HOOK_ID(shookid_CHLTVDemoRecorder_RecordStringTables);
 	shookid_CHLTVDemoRecorder_RecordStringTables = 0;
 
@@ -490,8 +503,12 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 	}
 
 	CHLTVServer::shookid_ReplyChallenge = SH_ADD_MANUALHOOK(CBaseServer_ReplyChallenge, pServer, SH_MEMBER(this, &SMExtension::Handler_CHLTVServer_ReplyChallenge), false);
+	CHLTVServer::shookid_thunk_FillServerInfo = SH_ADD_MANUALHOOK(CBaseServer_FillServerInfo, pServer, SH_MEMBER(this, &SMExtension::Handler_CHLTVServer_FillServerInfo), true);
+	
+	CHLTVServer* pHLTVServer = CHLTVServer::FromBaseServer(pServer);
+	CHLTVServer::shookid_FillServerInfo = SH_ADD_MANUALHOOK(CHLTVServer_FillServerInfo, pHLTVServer, SH_MEMBER(this, &SMExtension::Handler_CHLTVServer_FillServerInfo), true);
 
-	CHLTVDemoRecorder& demoRecorder = CHLTVServer::FromBaseServer(pServer)->GetDemoRecorder();
+	CHLTVDemoRecorder& demoRecorder = pHLTVServer->GetDemoRecorder();
 	shookid_CHLTVDemoRecorder_RecordStringTables = SH_ADD_HOOK(CHLTVDemoRecorder, RecordStringTables, &demoRecorder, SH_MEMBER(this, &SMExtension::Handler_CHLTVDemoRecorder_RecordStringTables), false);
 	shookid_CHLTVDemoRecorder_RecordServerClasses = SH_ADD_HOOK(CHLTVDemoRecorder, RecordServerClasses, &demoRecorder, SH_MEMBER(this, &SMExtension::Handler_CHLTVDemoRecorder_RecordServerClasses), false);
 
@@ -655,6 +672,12 @@ const void* SMExtension::Handler_CNetworkStringTable_GetStringUserData(int strin
 	RETURN_META_VALUE(MRES_SUPERCEDE, _this->GetStringUserDataFixed(stringNumber, length));
 }
 
+void SMExtension::Handler_CHLTVServer_FillServerInfo(SVC_ServerInfo& serverinfo)
+{
+	// feature request #12 - allow addons in demos
+	serverinfo.m_bIsVanilla = false;
+}
+
 bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 {
 	sm_sendprop_info_t info;
@@ -682,6 +705,8 @@ bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 	gameconfs->CloseGameConfigFile(gc);
 
 	SH_MANUALHOOK_RECONFIGURE(CBaseServer_ReplyChallenge, CBaseServer::vtblindex_ReplyChallenge, 0, 0);
+	SH_MANUALHOOK_RECONFIGURE(CBaseServer_FillServerInfo, CBaseServer::vtblindex_FillServerInfo, 0, 0);
+	SH_MANUALHOOK_RECONFIGURE(CHLTVServer_FillServerInfo, CHLTVServer::vtblindex_FillServerInfo, 0, 0);
 
 	// Retrieve addresses from steam_api shared library
 	if (!SetupFromSteamAPILibrary(error, maxlength)) {

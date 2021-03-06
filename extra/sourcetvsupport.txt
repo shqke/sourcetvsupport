@@ -27,6 +27,12 @@
 				"linux"		"40"
 				"windows"	"40"
 			}
+
+			"CHLTVServer::FillServerInfo"
+			{
+				"linux"		"9"
+				"windows"	"10"
+			}
 		}
 		
 		"Signatures"
@@ -89,6 +95,12 @@
 			{
 				"linux"		"58"
 				"windows"	"59"
+			}
+			
+			"CBaseServer::FillServerInfo"
+			{
+				"linux"		"45"
+				"windows"	"46"
 			}
 		}
 		
@@ -158,6 +170,12 @@
 			{
 				"linux"		"60"
 				"windows"	"61"
+			}
+
+			"CBaseServer::FillServerInfo"
+			{
+				"linux"		"47"
+				"windows"	"48"
 			}
 		}
 		
