@@ -51,6 +51,11 @@ jobs:
             os_short: win
             
     steps:
+      - name: Prepare env
+        shell: bash
+        run: |
+          echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
+          
       - name: Install (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -136,5 +141,5 @@ jobs:
       - name: Uploading package
         uses: actions/upload-artifact@v2
         with:
-          name: sourcetvsupport-sm${{ matrix.sm_version }}-${{ matrix.os_short }}
+          name: sourcetvsupport-sm${{ matrix.sm_version }}-${{ matrix.os_short }}-${{ env.GITHUB_SHA_SHORT }}
           path: sourcetvsupport/build/package
