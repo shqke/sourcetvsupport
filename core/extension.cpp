@@ -313,9 +313,11 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		{ "CBaseServer::GetChallengeNr", CBaseServer::vtblindex_GetChallengeNr },
 		{ "CBaseServer::GetChallengeType", CBaseServer::vtblindex_GetChallengeType },
 		{ "CBaseServer::ReplyChallenge", CBaseServer::vtblindex_ReplyChallenge },
+#if SOURCE_ENGINE == SE_LEFT4DEAD2
 		{ "CBaseServer::FillServerInfo", CBaseServer::vtblindex_FillServerInfo },
 #if !defined _WIN32
 		{ "CHLTVServer::FillServerInfo", CHLTVServer::vtblindex_FillServerInfo },
+#endif
 #endif
 	};
 
@@ -507,12 +509,14 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 		return;
 	}
 
-	CHLTVServer::shookid_ReplyChallenge = SH_ADD_MANUALHOOK(CBaseServer_ReplyChallenge, pServer, SH_MEMBER(this, &SMExtension::Handler_CHLTVServer_ReplyChallenge), false);
-	CHLTVServer::shookid_FillServerInfo = SH_ADD_MANUALHOOK(CBaseServer_FillServerInfo, pServer, SH_MEMBER(this, &SMExtension::Handler_CHLTVServer_FillServerInfo), true);
-	
 	CHLTVServer* pHLTVServer = CHLTVServer::FromBaseServer(pServer);
+
+	CHLTVServer::shookid_ReplyChallenge = SH_ADD_MANUALHOOK(CBaseServer_ReplyChallenge, pServer, SH_MEMBER(this, &SMExtension::Handler_CHLTVServer_ReplyChallenge), false);
+#if SOURCE_ENGINE == SE_LEFT4DEAD2
+	CHLTVServer::shookid_FillServerInfo = SH_ADD_MANUALHOOK(CBaseServer_FillServerInfo, pServer, SH_MEMBER(this, &SMExtension::Handler_CHLTVServer_FillServerInfo), true);
 #if !defined _WIN32
 	CHLTVServer::shookid_hltv_FillServerInfo = SH_ADD_MANUALHOOK(CHLTVServer_FillServerInfo, pHLTVServer, SH_MEMBER(this, &SMExtension::Handler_CHLTVServer_FillServerInfo), true);
+#endif
 #endif
 
 	CHLTVDemoRecorder& demoRecorder = pHLTVServer->m_DemoRecorder();

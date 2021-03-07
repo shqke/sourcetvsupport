@@ -18,12 +18,10 @@
 #include <bitbuf.h>
 #include <ihltv.h>
 
-#include <tier0/memdbgon.h>
-#include <tier1/utlbuffer.h>
-
 #include <os/am-shared-library.h>
 #include <os/am-path.h>
 
+// Metamod Source
 #include <sourcehook.h>
 
 #if defined _WIN32
@@ -47,7 +45,6 @@ enum ESocketIndex_t
 #define CONNECTIONLESS_HEADER			0xFFFFFFFF	// all OOB packet start with this sequence
 #define S2C_CHALLENGE			'A' // + challenge value
 
-// Metamod Source
 class SMExtension :
 	public SDKExtension
 {

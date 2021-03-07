@@ -33,12 +33,6 @@
 				"linux"		"40"
 				"windows"	"40"
 			}
-
-			"CHLTVServer::FillServerInfo"
-			{
-				// Entry point "CHLTVDemoRecorder::WriteServerInfo"
-				"linux"		"9"
-			}
 		}
 		
 		"Signatures"
@@ -101,12 +95,6 @@
 			{
 				"linux"		"58"
 				"windows"	"59"
-			}
-			
-			"CBaseServer::FillServerInfo"
-			{
-				"linux"		"45"
-				"windows"	"44"
 			}
 		}
 		
@@ -176,6 +164,12 @@
 			{
 				"linux"		"60"
 				"windows"	"61"
+			}
+
+			"CHLTVServer::FillServerInfo"
+			{
+				// Entry point "CHLTVDemoRecorder::WriteServerInfo"
+				"linux"		"9"
 			}
 
 			"CBaseServer::FillServerInfo"
