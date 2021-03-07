@@ -169,18 +169,19 @@ class CHLTVServer
 public:
 	static int offset_m_DemoRecorder;
 	static int offset_CClientFrameManager;
+	static int offset_CBaseServer;
 
 	static int vtblindex_FillServerInfo;
 
 	static int shookid_ReplyChallenge;
 	static int shookid_FillServerInfo;
-	static int shookid_thunk_FillServerInfo;
+	static int shookid_hltv_FillServerInfo;
 
 	static void* pfn_AddNewFrame;
 
 	static CDetour* detour_AddNewFrame;
 
-	CHLTVDemoRecorder& GetDemoRecorder()
+	CHLTVDemoRecorder& m_DemoRecorder()
 	{
 		return *reinterpret_cast<CHLTVDemoRecorder*>(reinterpret_cast<byte*>(this) + offset_m_DemoRecorder);
 	}
@@ -192,7 +193,7 @@ public:
 
 	static CHLTVServer* FromBaseServer(CBaseServer* pServer)
 	{
-		return reinterpret_cast<CHLTVServer*>(reinterpret_cast<byte*>(pServer) - 4);
+		return reinterpret_cast<CHLTVServer*>(reinterpret_cast<byte*>(pServer) - offset_CBaseServer);
 	}
 };
 

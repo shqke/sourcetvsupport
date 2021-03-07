@@ -4,6 +4,7 @@
 #include "sdk/public/engine/inetsupport.h"
 #include "sdk/engine/networkstringtable.h"
 
+#include <vector>
 #include <am-string.h>
 #include <checksum_crc.h>
 #include <extensions/IBinTools.h>
@@ -32,10 +33,11 @@ ICallWrapper* CBaseServer::vcall_GetChallengeNr = NULL;
 ICallWrapper* CBaseServer::vcall_GetChallengeType = NULL;
 int CHLTVServer::offset_m_DemoRecorder = 0;
 int CHLTVServer::offset_CClientFrameManager = 0;
+int CHLTVServer::offset_CBaseServer = 0;
 int CHLTVServer::vtblindex_FillServerInfo = 0;
 int CHLTVServer::shookid_ReplyChallenge = 0;
 int CHLTVServer::shookid_FillServerInfo = 0;
-int CHLTVServer::shookid_thunk_FillServerInfo = 0;
+int CHLTVServer::shookid_hltv_FillServerInfo = 0;
 void* CHLTVServer::pfn_AddNewFrame = NULL;
 CDetour* CHLTVServer::detour_AddNewFrame = NULL;
 int CGameServer::shookid_IsPausable = 0;
@@ -305,13 +307,16 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 	} s_offsets[] = {
 		{ "CBaseServer::stringTableCRC", CBaseServer::offset_stringTableCRC },
 		{ "CHLTVServer::CClientFrameManager", CHLTVServer::offset_CClientFrameManager },
+		{ "CHLTVServer::CBaseServer", CHLTVServer::offset_CBaseServer },
 		{ "CHLTVServer::m_DemoRecorder", CHLTVServer::offset_m_DemoRecorder },
 		{ "CFrameSnapshotManager::m_PackedEntitiesPool", CFrameSnapshotManager::offset_m_PackedEntitiesPool },
 		{ "CBaseServer::GetChallengeNr", CBaseServer::vtblindex_GetChallengeNr },
 		{ "CBaseServer::GetChallengeType", CBaseServer::vtblindex_GetChallengeType },
 		{ "CBaseServer::ReplyChallenge", CBaseServer::vtblindex_ReplyChallenge },
 		{ "CBaseServer::FillServerInfo", CBaseServer::vtblindex_FillServerInfo },
+#if !defined _WIN32
 		{ "CHLTVServer::FillServerInfo", CHLTVServer::vtblindex_FillServerInfo },
+#endif
 	};
 
 	for (auto&& el : s_offsets) {
@@ -478,8 +483,8 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 	SH_REMOVE_HOOK_ID(CHLTVServer::shookid_ReplyChallenge);
 	CHLTVServer::shookid_ReplyChallenge = 0;
 
-	SH_REMOVE_HOOK_ID(CHLTVServer::shookid_thunk_FillServerInfo);
-	CHLTVServer::shookid_thunk_FillServerInfo = 0;
+	SH_REMOVE_HOOK_ID(CHLTVServer::shookid_hltv_FillServerInfo);
+	CHLTVServer::shookid_hltv_FillServerInfo = 0;
 
 	SH_REMOVE_HOOK_ID(CHLTVServer::shookid_FillServerInfo);
 	CHLTVServer::shookid_FillServerInfo = 0;
@@ -503,12 +508,14 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 	}
 
 	CHLTVServer::shookid_ReplyChallenge = SH_ADD_MANUALHOOK(CBaseServer_ReplyChallenge, pServer, SH_MEMBER(this, &SMExtension::Handler_CHLTVServer_ReplyChallenge), false);
-	CHLTVServer::shookid_thunk_FillServerInfo = SH_ADD_MANUALHOOK(CBaseServer_FillServerInfo, pServer, SH_MEMBER(this, &SMExtension::Handler_CHLTVServer_FillServerInfo), true);
+	CHLTVServer::shookid_FillServerInfo = SH_ADD_MANUALHOOK(CBaseServer_FillServerInfo, pServer, SH_MEMBER(this, &SMExtension::Handler_CHLTVServer_FillServerInfo), true);
 	
 	CHLTVServer* pHLTVServer = CHLTVServer::FromBaseServer(pServer);
-	CHLTVServer::shookid_FillServerInfo = SH_ADD_MANUALHOOK(CHLTVServer_FillServerInfo, pHLTVServer, SH_MEMBER(this, &SMExtension::Handler_CHLTVServer_FillServerInfo), true);
+#if !defined _WIN32
+	CHLTVServer::shookid_hltv_FillServerInfo = SH_ADD_MANUALHOOK(CHLTVServer_FillServerInfo, pHLTVServer, SH_MEMBER(this, &SMExtension::Handler_CHLTVServer_FillServerInfo), true);
+#endif
 
-	CHLTVDemoRecorder& demoRecorder = pHLTVServer->GetDemoRecorder();
+	CHLTVDemoRecorder& demoRecorder = pHLTVServer->m_DemoRecorder();
 	shookid_CHLTVDemoRecorder_RecordStringTables = SH_ADD_HOOK(CHLTVDemoRecorder, RecordStringTables, &demoRecorder, SH_MEMBER(this, &SMExtension::Handler_CHLTVDemoRecorder_RecordStringTables), false);
 	shookid_CHLTVDemoRecorder_RecordServerClasses = SH_ADD_HOOK(CHLTVDemoRecorder, RecordServerClasses, &demoRecorder, SH_MEMBER(this, &SMExtension::Handler_CHLTVDemoRecorder_RecordServerClasses), false);
 
@@ -539,14 +546,13 @@ void SMExtension::Handler_CHLTVDirector_SetHLTVServer(IHLTVServer* pIHLTVServer)
 
 void SMExtension::Handler_CHLTVDemoRecorder_RecordStringTables()
 {
-	IDemoRecorder* _this = META_IFACEPTR(IDemoRecorder);
+	CHLTVDemoRecorder* _this = META_IFACEPTR(CHLTVDemoRecorder);
 
 	// bug#2
 	// insufficient buffer size in CHLTVDemoRecorder::RecordStringTables, overflowing it with stringtables data (starting at CHLTVDemoRecorder::RecordStringTables)
 	// stringtables wont be saved properly, causing demo file to be corrupted
-	CUtlBuffer bigBuffer;
-	bigBuffer.EnsureCapacity(DEMO_RECORD_BUFFER_SIZE);
-	bf_write buf(bigBuffer.Base(), DEMO_RECORD_BUFFER_SIZE);
+	std::vector<byte> bigBuffer(DEMO_RECORD_BUFFER_SIZE);
+	bf_write buf(bigBuffer.data(), bigBuffer.size());
 
 	int numTables = networkStringTableContainerServer->GetNumTables();
 	buf.WriteByte(numTables);
@@ -585,11 +591,10 @@ void SMExtension::Handler_CHLTVDemoRecorder_RecordStringTables()
 
 void SMExtension::Handler_CHLTVDemoRecorder_RecordServerClasses(ServerClass* pClasses)
 {
-	IDemoRecorder* _this = META_IFACEPTR(IDemoRecorder);
+	CHLTVDemoRecorder* _this = META_IFACEPTR(CHLTVDemoRecorder);
 
-	CUtlBuffer bigBuffer;
-	bigBuffer.EnsureCapacity(DEMO_RECORD_BUFFER_SIZE);
-	bf_write buf(bigBuffer.Base(), DEMO_RECORD_BUFFER_SIZE);
+	std::vector<byte> bigBuffer(DEMO_RECORD_BUFFER_SIZE);
+	bf_write buf(bigBuffer.data(), bigBuffer.size());
 
 	// Send SendTable info.
 	InvokeDataTable_WriteSendTablesBuffer(pClasses, &buf);

@@ -18,8 +18,13 @@
 #include <bitbuf.h>
 #include <ihltv.h>
 
+#include <tier0/memdbgon.h>
+#include <tier1/utlbuffer.h>
+
 #include <os/am-shared-library.h>
 #include <os/am-path.h>
+
+#include <sourcehook.h>
 
 #if defined _WIN32
 #	define LIBSTEAMAPI_FILE "steam_api.dll"
@@ -43,8 +48,6 @@ enum ESocketIndex_t
 #define S2C_CHALLENGE			'A' // + challenge value
 
 // Metamod Source
-#include <sourcehook.h>
-
 class SMExtension :
 	public SDKExtension
 {

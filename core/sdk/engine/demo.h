@@ -18,8 +18,6 @@ class ServerClass;
 abstract_class IDemoRecorder
 {
 public:
-	~IDemoRecorder() {}
-
 	virtual CDemoFile* GetDemoFile() = 0;
 	virtual int		GetRecordingTick(void) = 0;
 

@@ -16,6 +16,12 @@
 				"windows"	"472"
 			}
 
+			"CHLTVServer::CBaseServer"
+			{
+				"linux"		"4"
+				"windows"	"8"
+			}
+
 			"CHLTVServer::m_DemoRecorder"
 			{
 				"linux"		"19460"
@@ -30,8 +36,8 @@
 
 			"CHLTVServer::FillServerInfo"
 			{
+				// Entry point "CHLTVDemoRecorder::WriteServerInfo"
 				"linux"		"9"
-				"windows"	"10"
 			}
 		}
 		
@@ -100,7 +106,7 @@
 			"CBaseServer::FillServerInfo"
 			{
 				"linux"		"45"
-				"windows"	"46"
+				"windows"	"44"
 			}
 		}
 		
@@ -175,7 +181,7 @@
 			"CBaseServer::FillServerInfo"
 			{
 				"linux"		"47"
-				"windows"	"48"
+				"windows"	"46"
 			}
 		}
 		
