@@ -229,7 +229,8 @@ public:
 	}
 };
 
-class CBaseEntity
+class CBaseEntity :
+	public IServerEntity
 {
 public:
 	edict_t* edict()

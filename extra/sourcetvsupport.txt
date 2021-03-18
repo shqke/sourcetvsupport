@@ -82,19 +82,19 @@
 			"CBaseServer::GetChallengeNr"
 			{
 				"linux"		"52"
-				"windows"	"53"
+				"windows"	"51"
 			}
 
 			"CBaseServer::GetChallengeType"
 			{
 				"linux"		"53"
-				"windows"	"54"
+				"windows"	"52"
 			}
 
 			"CBaseServer::ReplyChallenge"
 			{
 				"linux"		"58"
-				"windows"	"59"
+				"windows"	"57"
 			}
 		}
 		
@@ -151,19 +151,19 @@
 			"CBaseServer::GetChallengeNr"
 			{
 				"linux"		"54"
-				"windows"	"55"
+				"windows"	"53"
 			}
 
 			"CBaseServer::GetChallengeType"
 			{
 				"linux"		"55"
-				"windows"	"56"
+				"windows"	"54"
 			}
 
 			"CBaseServer::ReplyChallenge"
 			{
 				"linux"		"60"
-				"windows"	"61"
+				"windows"	"59"
 			}
 
 			"CHLTVServer::FillServerInfo"
