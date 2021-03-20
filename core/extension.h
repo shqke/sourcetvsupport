@@ -1,10 +1,10 @@
 #ifndef _INCLUDE_SOURCETV_SUPPORT_H_
 #define _INCLUDE_SOURCETV_SUPPORT_H_
 
-// include these early to let use debugging versions of the memory allocators
+// include these before smsdk_ext.h to let use debugging versions of the memory allocators (Windows only)
+// sourcetvsupport/issues/6, sourcetvsupport/issues/14
 #include "sdk/public/tier1/mempool.h"
 #include "sdk/engine/packed_entity.h"
-#include "sdk/engine/clientframe.h"
 
 #include "smsdk/smsdk_ext.h"
 

@@ -20,6 +20,7 @@
 
 #include "tier1/utlvector.h"
 #include "tier1/utlrbtree.h"
+
 #include "tier0/memdbgon.h"
 
 //-----------------------------------------------------------------------------
@@ -52,7 +53,7 @@ public:
 	// Purpose: Frees a block of memory
 	// Input  : *memBlock - the memory to free
 	//-----------------------------------------------------------------------------
-	void		Free(void *memBlock)
+	void		Free(void* memBlock)
 	{
 		if (!memBlock)
 			return;  // trying to delete NULL pointer, ignore
@@ -60,7 +61,7 @@ public:
 #ifdef _DEBUG
 					 // check to see if the memory is from the allocated range
 		bool bOK = false;
-		for (CBlob *pCur = m_BlobHead.m_pNext; pCur != &m_BlobHead; pCur = pCur->m_pNext)
+		for (CBlob* pCur = m_BlobHead.m_pNext; pCur != &m_BlobHead; pCur = pCur->m_pNext)
 		{
 			if (memBlock >= pCur->m_Data && (char*)memBlock < (pCur->m_Data + pCur->m_NumBytes))
 			{
@@ -88,8 +89,8 @@ public:
 	void		Clear()
 	{
 		// Free everything..
-		CBlob *pNext;
-		for (CBlob *pCur = m_BlobHead.m_pNext; pCur != &m_BlobHead; pCur = pNext)
+		CBlob* pNext;
+		for (CBlob* pCur = m_BlobHead.m_pNext; pCur != &m_BlobHead; pCur = pNext)
 		{
 			pNext = pCur->m_pNext;
 			free(pCur);
@@ -188,5 +189,7 @@ public:
 		CUtlMemoryPool::Clear();
 	}
 };
+
+#include "tier0/memdbgoff.h"
 
 #endif // MEMPOOL_EXT_H

@@ -24,6 +24,7 @@ extern IPlayerInfoManager* playerinfomanager;
 #endif
 
 #include "sdk/engine/demo.h"
+#include "sdk/engine/clientframe.h"
 
 class CDetour;
 

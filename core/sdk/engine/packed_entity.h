@@ -16,6 +16,7 @@
 #include <utlvector.h>
 #include <dt_send.h>
 #include "changeframelist.h"
+
 #include "tier0/memdbgon.h"
 
 class ServerClass;
@@ -72,5 +73,7 @@ private:
 	unsigned int		m_nSnapshotCreationTick : 31;
 	unsigned int		m_nShouldCheckCreationTick : 1;
 };
+
+#include "tier0/memdbgoff.h"
 
 #endif // PACKED_ENTITY_H

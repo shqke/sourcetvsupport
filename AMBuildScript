@@ -313,6 +313,11 @@ class HLTVSupportConfig(object):
     if compiler.like('msvc'):
       if compiler.version >= 1900:
         compiler.linkflags += ['legacy_stdio_definitions.lib']
+      # https://developercommunity.visualstudio.com/t/msvc-142328019-is-missing-include-typeinfoh/734566#T-N752563
+      # https://qiita.com/yumetodo/items/8c112fca0a8e6b47072d
+      # let include local typeinfo.h which includes typeinfo
+      if compiler.version >= 1923:
+        compiler.cxxincludes += [os.path.join(builder.currentSourcePath, 'core', 'typeinfo_dbg')]
       compiler.defines += ['COMPILER_MSVC', 'COMPILER_MSVC32']
     else:
       compiler.defines += ['COMPILER_GCC']
