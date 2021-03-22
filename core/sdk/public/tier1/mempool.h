@@ -44,11 +44,6 @@ public:
 	CUtlMemoryPool(int blockSize, int numElements, int growMode = GROW_FAST, const char *pszAllocOwner = NULL, int nAlignment = 0);
 	~CUtlMemoryPool();
 
-	void*		Alloc();	// Allocate the element size you specified in the constructor.
-	void*		Alloc(size_t amount);
-	void*		AllocZero();	// Allocate the element size you specified in the constructor, zero the memory before construction
-	void*		AllocZero(size_t amount);
-
 	//-----------------------------------------------------------------------------
 	// Purpose: Frees a block of memory
 	// Input  : *memBlock - the memory to free
@@ -98,17 +93,6 @@ public:
 		Init();
 	}
 
-	// Error reporting... 
-	static void SetErrorReportFunc(MemoryPoolReportFunc_t func);
-
-	// returns number of allocated blocks
-	int Count() const { return m_BlocksAllocated; }
-	int PeakCount() const { return m_PeakAlloc; }
-	int BlockSize() const { return m_BlockSize; }
-	int Size() const { return m_NumBlobs * m_BlocksPerBlob * m_BlockSize; }
-
-	bool		IsAllocationWithinPool(void *pMem) const;
-
 protected:
 	class CBlob
 	{
@@ -127,9 +111,6 @@ protected:
 		m_pHeadOfFreeList = 0;
 		m_BlobHead.m_pNext = m_BlobHead.m_pPrev = &m_BlobHead;
 	}
-
-	void		AddNewBlob();
-	void		ReportLeaks();
 
 	int			m_BlockSize;
 	int			m_BlocksPerBlob;
@@ -180,6 +161,9 @@ public:
 			{
 				if (freeBlocks.Find(p) == freeBlocks.InvalidIndex())
 				{
+#if defined(_LINUX) && defined(DEBUG)
+#error "Unsupported"
+#endif
 					Destruct(p);
 				}
 				p++;

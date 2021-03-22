@@ -42,8 +42,6 @@ public:
 class CNetworkStringTable  : public INetworkStringTable
 {
 public:
-	enum ConstEnum_t {MIRROR_TABLE_MAX_COUNT = 2};
-
 	const void* GetStringUserDataFixed(int stringNumber, int* length) const
 	{
 		INetworkStringDict* pDict = this->m_pItems;

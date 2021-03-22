@@ -41,6 +41,7 @@ int CHLTVServer::shookid_hltv_FillServerInfo = 0;
 void* CHLTVServer::pfn_AddNewFrame = NULL;
 CDetour* CHLTVServer::detour_AddNewFrame = NULL;
 int CGameServer::shookid_IsPausable = 0;
+int CBaseClient::offset_m_SteamID = 0;
 void* CBaseClient::pfn_SendFullConnectEvent = NULL;
 CDetour* CBaseClient::detour_SendFullConnectEvent = NULL;
 void* CSteam3Server::pfn_NotifyClientDisconnect = NULL;
@@ -148,16 +149,18 @@ DETOUR_DECL_MEMBER1(Handler_CHLTVServer_AddNewFrame, CClientFrame*, CClientFrame
 }
 
 // bug#8: ticket auth (authprotocol = 2) with hltv clients crashes server in steamclient.so on disconnect
-// wrong steamid of unauthentificated hltv client passed to CSteamGameServer012::EndAuthSession
+// malformed steamid of unauthentificated hltv client passed to CSteamGameServer012::EndAuthSession
 DETOUR_DECL_MEMBER1(Handler_CSteam3Server_NotifyClientDisconnect, void, CBaseClient*, client)
 {
 	if (!client->IsConnected() || client->IsFakeClient()) {
 		return;
 	}
 
-	if (client->GetServer()->IsHLTV()) {
+	if (!client->m_SteamID().IsValid()) {
 		return;
 	}
+
+	// rww: SendUserDisconnect
 
 	DETOUR_MEMBER_CALL(Handler_CSteam3Server_NotifyClientDisconnect)(client);
 }
@@ -319,6 +322,7 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		{ "CHLTVServer::FillServerInfo", CHLTVServer::vtblindex_FillServerInfo },
 #endif
 #endif
+		{ "CBaseClient::m_SteamID", CBaseClient::offset_m_SteamID },
 	};
 
 	for (auto&& el : s_offsets) {
@@ -699,7 +703,7 @@ bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 	CBasePlayer::sendprop_m_fFlags = info.actual_offset;
 
 	IGameConfig* gc = NULL;
-	if (!gameconfs->LoadGameConfigFile(GAMEDATA_FILE, &gc, error, maxlength) || gc == NULL) {
+	if (!gameconfs->LoadGameConfigFile(GAMEDATA_FILE, &gc, error, maxlength)) {
 		ke::SafeStrcpy(error, maxlength, "Unable to load a gamedata file \"" GAMEDATA_FILE ".txt\"");
 
 		return false;

@@ -21,6 +21,9 @@ extern IPlayerInfoManager* playerinfomanager;
 
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 #include "steamworks_sdk_137/public/steam/steam_gameserver.h"
+#include "steamworks_sdk_137/public/steam/steamclientpublic.h"
+#else
+#include "steamworks_sdk_106/public/steam/steamclientpublic.h"
 #endif
 
 #include "sdk/engine/demo.h"
@@ -96,9 +99,16 @@ class CBaseClient :
 	public IClientMessageHandler
 {
 public:
+	static int offset_m_SteamID;
+
 	static void* pfn_SendFullConnectEvent;
 
 	static CDetour* detour_SendFullConnectEvent;
+
+	CSteamID& m_SteamID()
+	{
+		return *reinterpret_cast<CSteamID*>(reinterpret_cast<byte*>(this) + offset_m_SteamID);
+	}
 };
 
 class CBaseServer
