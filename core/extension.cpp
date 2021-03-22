@@ -687,6 +687,10 @@ const void* SMExtension::Handler_CNetworkStringTable_GetStringUserData(int strin
 
 void SMExtension::Handler_CHLTVServer_FillServerInfo(SVC_ServerInfo& serverinfo)
 {
+	if (!ThreadInMainThread()) {
+		smutils->LogError(myself, "FillServerInfo not in main thread!");
+	}
+
 	// feature request #12 - allow addons in demos
 	serverinfo.m_bIsVanilla = false;
 }
