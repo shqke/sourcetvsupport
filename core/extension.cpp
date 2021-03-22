@@ -677,6 +677,10 @@ bool SMExtension::Handler_CGameServer_IsPausable() const
 
 const void* SMExtension::Handler_CNetworkStringTable_GetStringUserData(int stringNumber, int* length) const
 {
+	if (!ThreadInMainThread()) {
+		smutils->LogError(myself, "GetStringUserData not in main thread!");
+	}
+
 	CNetworkStringTable* _this = META_IFACEPTR(CNetworkStringTable);
 	RETURN_META_VALUE(MRES_SUPERCEDE, _this->GetStringUserDataFixed(stringNumber, length));
 }
