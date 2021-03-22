@@ -5,12 +5,10 @@ on:
     paths-ignore:
     - LICENSE
     - README.md
-    branches: master
   pull_request:
     paths-ignore:
     - LICENSE
     - README.md
-    branches: master
   schedule:
     - cron: '30 03 01 */3 *' # Artifacts expire every 3 months
 
