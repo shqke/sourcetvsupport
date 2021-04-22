@@ -53,7 +53,6 @@ CDetour* CFrameSnapshotManager::detour_LevelChanged = NULL;
 int shookid_CHLTVDemoRecorder_RecordStringTables = 0;
 int shookid_CHLTVDemoRecorder_RecordServerClasses = 0;
 int shookid_SteamGameServer_LogOff = 0;
-int shookid_CNetworkStringTable_GetStringUserData = 0;
 
 void* pfn_DataTable_WriteSendTablesBuffer = NULL;
 void* pfn_SteamGameServer_GetHSteamPipe = NULL;
@@ -74,7 +73,6 @@ SH_DECL_HOOK0(IServer, IsPausable, const, 0, bool);
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 SH_DECL_HOOK0_void(ISteamGameServer, LogOff, SH_NOATTRIB, 0);
 #endif
-SH_DECL_HOOK2(INetworkStringTable, GetStringUserData, const, 0, const void*, int, int*);
 
 // Detours
 #include <CDetour/detours.h>
@@ -501,9 +499,6 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 	SH_REMOVE_HOOK_ID(shookid_CHLTVDemoRecorder_RecordServerClasses);
 	shookid_CHLTVDemoRecorder_RecordServerClasses = 0;
 
-	SH_REMOVE_HOOK_ID(shookid_CNetworkStringTable_GetStringUserData);
-	shookid_CNetworkStringTable_GetStringUserData = 0;
-
 	if (pIHLTVServer == NULL) {
 		return;
 	}
@@ -527,9 +522,11 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 	shookid_CHLTVDemoRecorder_RecordStringTables = SH_ADD_HOOK(CHLTVDemoRecorder, RecordStringTables, &demoRecorder, SH_MEMBER(this, &SMExtension::Handler_CHLTVDemoRecorder_RecordStringTables), false);
 	shookid_CHLTVDemoRecorder_RecordServerClasses = SH_ADD_HOOK(CHLTVDemoRecorder, RecordServerClasses, &demoRecorder, SH_MEMBER(this, &SMExtension::Handler_CHLTVDemoRecorder_RecordServerClasses), false);
 
-	INetworkStringTable* pStringTableGameRules = pServer->m_StringTables()->FindTable("GameRulesCreation");
+	CNetworkStringTable* pStringTableGameRules = static_cast<CNetworkStringTable*>(pServer->m_StringTables()->FindTable("GameRulesCreation"));
 	if (pStringTableGameRules != NULL) {
-		shookid_CNetworkStringTable_GetStringUserData = SH_ADD_HOOK(INetworkStringTable, GetStringUserData, pStringTableGameRules, SH_MEMBER(this, &SMExtension::Handler_CNetworkStringTable_GetStringUserData), false);
+		// This would copy itemchange_s contents into CNetworkStringTableItem without reallocation
+		// 30 is a value that you get from itemchange_s
+		pStringTableGameRules->RestoreTick(30);
 	}
 
 	// bug##: in CHLTVServer::StartMaster, bot is executing "spectate" command which does nothing and it keeps him in unassigned team (index 0)
@@ -679,14 +676,12 @@ bool SMExtension::Handler_CGameServer_IsPausable() const
 	RETURN_META_VALUE(MRES_SUPERCEDE, sv_pausable.GetBool());
 }
 
-const void* SMExtension::Handler_CNetworkStringTable_GetStringUserData(int stringNumber, int* length) const
-{
-	CNetworkStringTable* _this = META_IFACEPTR(CNetworkStringTable);
-	RETURN_META_VALUE(MRES_SUPERCEDE, _this->GetStringUserDataFixed(stringNumber, length));
-}
-
 void SMExtension::Handler_CHLTVServer_FillServerInfo(SVC_ServerInfo& serverinfo)
 {
+	if (!ThreadInMainThread()) {
+		smutils->LogError(myself, "FillServerInfo not in main thread!");
+	}
+
 	// feature request #12 - allow addons in demos
 	serverinfo.m_bIsVanilla = false;
 }

@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright Â© 1996-2005, Valve Corporation, All rights reserved. ============//
 //
 // Purpose: 
 //
@@ -42,25 +42,22 @@ public:
 class CNetworkStringTable  : public INetworkStringTable
 {
 public:
-	const void* GetStringUserDataFixed(int stringNumber, int* length) const
+	void RestoreTick(int tick)
 	{
-		INetworkStringDict* pDict = this->m_pItems;
-		if (m_pItemsClientSide && stringNumber < -1) {
-			pDict = m_pItemsClientSide;
-			stringNumber = -stringNumber;
+		// TODO optimize this, most of the time the tables doens't really change
+
+		m_nLastChangedTick = 0;
+
+		int count = m_pItems->Count();
+
+		for (int i = 0; i < count; i++)
+		{
+			// restore tick in all entries
+			int tickChanged = m_pItems->Element(i).RestoreTick(tick);
+
+			if (tickChanged > m_nLastChangedTick)
+				m_nLastChangedTick = tickChanged;
 		}
-
-		CNetworkStringTableItem& item = pDict->Element(stringNumber);
-		if (item.m_pChangeList != NULL && item.m_pChangeList->Count() > 0) {
-			CNetworkStringTableItem::itemchange_s& itemchange = item.m_pChangeList->Tail();
-			if (length != NULL) {
-				*length = itemchange.length;
-			}
-
-			return itemchange.data;
-		}
-
-		return item.GetUserData(length);
 	}
 
 	TABLEID					m_id;
