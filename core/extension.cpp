@@ -59,6 +59,7 @@ void* pfn_SteamGameServer_GetHSteamPipe = NULL;
 void* pfn_SteamGameServer_GetHSteamUser = NULL;
 void* pfn_SteamInternal_CreateInterface = NULL;
 void* pfn_SteamInternal_GameServer_Init = NULL;
+void* pfn_OpenSocketInternal = NULL;
 
 CDetour* detour_SteamInternal_GameServer_Init = NULL;
 
@@ -245,6 +246,11 @@ void SMExtension::Load()
 	OnSetHLTVServer(hltvdirector->GetHLTVServer());
 	OnGameServer_Init();
 
+#ifdef TV_RELAYTEST
+	static ConVarRef clientport("clientport");
+	InvokeOpenSocketInternal(NS_CLIENT, clientport.GetInt(), PORT_SERVER, "client", true);
+#endif
+
 	// Let plugins know when it's safe to use SourceTV features
 	sharesys->RegisterLibrary(myself, "sourcetvsupport");
 }
@@ -342,6 +348,9 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		{ "CFrameSnapshotManager::LevelChanged", CFrameSnapshotManager::pfn_LevelChanged },
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 		{ "CBaseClient::SendFullConnectEvent", CBaseClient::pfn_SendFullConnectEvent },
+#endif
+#ifdef TV_RELAYTEST
+		{ "OpenSocketInternal", pfn_OpenSocketInternal },
 #endif
 	};
 
@@ -678,10 +687,6 @@ bool SMExtension::Handler_CGameServer_IsPausable() const
 
 void SMExtension::Handler_CHLTVServer_FillServerInfo(SVC_ServerInfo& serverinfo)
 {
-	if (!ThreadInMainThread()) {
-		smutils->LogError(myself, "FillServerInfo not in main thread!");
-	}
-
 	// feature request #12 - allow addons in demos
 	serverinfo.m_bIsVanilla = false;
 }

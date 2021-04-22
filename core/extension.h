@@ -11,6 +11,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+//#define TV_RELAYTEST
+
 // SDK
 #define TEAM_SPECTATOR			1	// spectator team
 
@@ -44,6 +46,7 @@ enum ESocketIndex_t
 
 #define CONNECTIONLESS_HEADER			0xFFFFFFFF	// all OOB packet start with this sequence
 #define S2C_CHALLENGE			'A' // + challenge value
+#define PORT_SERVER			27015	// Default server port, UDP/TCP
 
 class SMExtension :
 	public SDKExtension
@@ -69,6 +72,7 @@ public: // SourceHook callbacks
 	void Handler_CHLTVServer_ReplyChallenge(netadr_s& adr, CBitRead& inmsg);
 	void Handler_ISteamGameServer_LogOff();
 	bool Handler_CGameServer_IsPausable() const;
+	const void* Handler_CNetworkStringTable_GetStringUserData(int stringNumber, int* length) const;
 	void Handler_CHLTVServer_FillServerInfo(SVC_ServerInfo& serverinfo);
 
 public: // SDKExtension

@@ -59,13 +59,13 @@ void DataTable_WriteClassInfosBuffer(ServerClass* pClasses, bf_write* pBuf)
 extern int shookid_CHLTVDemoRecorder_RecordStringTables;
 extern int shookid_CHLTVDemoRecorder_RecordServerClasses;
 extern int shookid_SteamGameServer_LogOff;
-extern int shookid_CNetworkStringTable_GetStringUserData;
 
 extern void* pfn_DataTable_WriteSendTablesBuffer;
 extern void* pfn_SteamGameServer_GetHSteamPipe;
 extern void* pfn_SteamGameServer_GetHSteamUser;
 extern void* pfn_SteamInternal_CreateInterface;
 extern void* pfn_SteamInternal_GameServer_Init;
+extern void* pfn_OpenSocketInternal;
 
 extern CDetour* detour_SteamInternal_GameServer_Init;
 
@@ -92,6 +92,12 @@ HSteamUser InvokeGetHSteamUser()
 	return reinterpret_cast<decltype(SteamGameServer_GetHSteamUser)*>(pfn_SteamGameServer_GetHSteamUser)();
 }
 #endif
+
+void InvokeOpenSocketInternal(int nModule, int nSetPort, int nDefaultPort, const char* pName, bool bTryAny)
+{
+	void OpenSocketInternal(int nModule, int nSetPort, int nDefaultPort, const char* pName, bool bTryAny);
+	return reinterpret_cast<decltype(OpenSocketInternal)*>(pfn_OpenSocketInternal)(nModule, nSetPort, nDefaultPort, pName, bTryAny);
+}
 
 class CBaseClient :
 	public IGameEventListener2,

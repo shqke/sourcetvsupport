@@ -48,6 +48,12 @@
 				"library"	"engine"
 				"linux"		"@_Z31DataTable_WriteSendTablesBufferP11ServerClassP8bf_write"
 			}
+
+			"OpenSocketInternal"
+			{
+				"library"	"engine"
+				"linux"		"@_ZL18OpenSocketInternaliiiPKcib.constprop.117"
+			}
 			
 			"CBaseServer::IsExclusiveToLobbyConnections"
 			{
