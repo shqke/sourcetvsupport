@@ -33,6 +33,12 @@
 				"linux"		"40"
 				"windows"	"40"
 			}
+
+			"CBaseClient::m_SteamID"
+			{
+				"linux"		"125"
+				"windows"	"125"
+			}
 		}
 		
 		"Signatures"

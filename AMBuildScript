@@ -341,7 +341,7 @@ class HLTVSupportConfig(object):
 
     dynamic_libs = []
     if builder.target_platform == 'linux':
-      if sdk.name in ['l4d2']:
+      if sdk.name == 'l4d2':
         dynamic_libs = ['libtier0_srv.so', 'libvstdlib_srv.so']
       else:
         dynamic_libs = ['libtier0.so', 'libvstdlib.so']

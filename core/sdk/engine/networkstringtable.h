@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright Â© 1996-2005, Valve Corporation, All rights reserved. ============//
 //
 // Purpose: 
 //
@@ -42,8 +42,6 @@ public:
 class CNetworkStringTable  : public INetworkStringTable
 {
 public:
-	enum ConstEnum_t {MIRROR_TABLE_MAX_COUNT = 2};
-    
 	void RestoreTick(int tick)
 	{
 		// TODO optimize this, most of the time the tables doens't really change
