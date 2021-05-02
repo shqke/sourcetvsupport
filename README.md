@@ -20,7 +20,7 @@ Supported Games
 
 Installation
 ------
-1. Get [latest sourcetvsupport release](https://github.com/shqke/sourcetvsupport/actions) for your OS (linux or windows)
+1. Get [latest sourcetvsupport release](https://github.com/shqke/sourcetvsupport/actions) (requires authentication) for your OS (linux or windows)
 2. Extract the zip file into your server's mod folder
 3. Add `-hltv` and/or `+tv_enable 1` to srcds start parameters
 4. Set SourceTV related cvars into server config
