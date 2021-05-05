@@ -6,7 +6,7 @@
 #include "sdk/public/tier1/mempool.h"
 #include "sdk/engine/packed_entity.h"
 
-#include "smsdk/smsdk_ext.h"
+#include <smsdk_ext.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -72,7 +72,6 @@ public: // SourceHook callbacks
 	void Handler_CHLTVServer_ReplyChallenge(netadr_s& adr, CBitRead& inmsg);
 	void Handler_ISteamGameServer_LogOff();
 	bool Handler_CGameServer_IsPausable() const;
-	const void* Handler_CNetworkStringTable_GetStringUserData(int stringNumber, int* length) const;
 	void Handler_CHLTVServer_FillServerInfo(SVC_ServerInfo& serverinfo);
 
 public: // SDKExtension

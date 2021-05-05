@@ -44,9 +44,9 @@ CopyFiles('extra', 'addons/sourcemod/extensions',
 )
 
 # Copy extension
-for cxx_task in HLTVSupport.extensions:
+for cxx_task in Extension.extensions:
   builder.AddCopy(cxx_task.binary, folder_map['addons/sourcemod/extensions'])
 
 # Copy VSP binary
-for cxx_task in HLTVSupport.binaries:
+for cxx_task in Extension.binaries:
   builder.AddCopy(cxx_task.binary, folder_map['addons/sourcetvsupport/bin'])

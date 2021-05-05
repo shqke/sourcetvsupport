@@ -1,11 +1,11 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
-project = HLTVSupport.HL2Project(builder, 'vsp')
+project = Extension.HL2Project(builder, 'vsp')
 project.sources += [
   'plugin_vsp.cpp',
 ]
 
-for sdk_name in HLTVSupport.sdks:
-  sdk = HLTVSupport.sdks[sdk_name]
-  HLTVSupport.HL2Config(project, 'vsp_' + sdk.name, sdk)
+for sdk_name in Extension.sdks:
+  sdk = Extension.sdks[sdk_name]
+  Extension.HL2Config(project, 'vsp_' + sdk.name, sdk)
 
-HLTVSupport.binaries += builder.Add(project)
+Extension.binaries += builder.Add(project)

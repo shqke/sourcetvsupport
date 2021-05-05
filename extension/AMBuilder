@@ -1,0 +1,30 @@
+# vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
+import os.path
+
+projectName = 'sourcetvsupport'
+
+project = Extension.HL2Project(builder, projectName + '.ext')
+project.sources += [
+  'extension.cpp',
+  os.path.join(Extension.sm_root, 'public', 'smsdk_ext.cpp'),
+  os.path.join(Extension.sm_root, 'public', 'CDetour', 'detours.cpp'),
+  os.path.join(Extension.sm_root, 'public', 'asm', 'asm.c'),
+]
+
+# sm1.10+
+libudis_folder = os.path.join(Extension.sm_root, 'public', 'libudis86')
+if os.path.isdir(libudis_folder):
+  project.sources += [
+    os.path.join(libudis_folder, 'decode.c'),
+    os.path.join(libudis_folder, 'itab.c'),
+    os.path.join(libudis_folder, 'syn-att.c'),
+    os.path.join(libudis_folder, 'syn-intel.c'),
+    os.path.join(libudis_folder, 'syn.c'),
+    os.path.join(libudis_folder, 'udis86.c'),
+  ]
+
+for sdk_name in Extension.sdks:
+  sdk = Extension.sdks[sdk_name]
+  Extension.HL2Config(project, projectName + '.ext.' + sdk.ext, sdk)
+
+Extension.extensions += builder.Add(project)

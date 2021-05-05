@@ -42,7 +42,7 @@ def ResolveEnvPath(env, folder):
 def Normalize(path):
   return os.path.abspath(os.path.normpath(path))
 
-class HLTVSupportConfig(object):
+class ExtensionConfig(object):
   def __init__(self):
     self.sdks = {}
     self.binaries = []
@@ -255,7 +255,7 @@ class HLTVSupportConfig(object):
     cxx.defines += ['_LINUX', 'POSIX']
     cxx.linkflags += ['-lm']
     if cxx.vendor == 'gcc':
-      cxx.linkflags += ['-static-libgcc', '-static-libstdc++']
+      cxx.linkflags += ['-static-libgcc']
     elif cxx.vendor == 'clang':
       cxx.linkflags += ['-lgcc_eh']
 
@@ -317,7 +317,7 @@ class HLTVSupportConfig(object):
       # https://qiita.com/yumetodo/items/8c112fca0a8e6b47072d
       # let include local typeinfo.h which includes typeinfo
       if compiler.version >= 1923:
-        compiler.cxxincludes += [os.path.join(builder.currentSourcePath, 'core', 'typeinfo_dbg')]
+        compiler.cxxincludes += [os.path.join(builder.currentSourcePath, 'extension', 'typeinfo_dbg')]
       compiler.defines += ['COMPILER_MSVC', 'COMPILER_MSVC32']
     else:
       compiler.defines += ['COMPILER_GCC']
@@ -383,13 +383,13 @@ class HLTVSupportConfig(object):
     binary = project.Configure(name, '{0} - {1}'.format(self.tag, sdk.name))
     return self.ConfigureForHL2(binary, sdk)
 
-HLTVSupport = HLTVSupportConfig()
-HLTVSupport.detectSDKs()
-HLTVSupport.configure()
+Extension = ExtensionConfig()
+Extension.detectSDKs()
+Extension.configure()
 
 # Add additional buildscripts here
 BuildScripts = [
-  'core/AMBuilder',
+  'extension/AMBuilder',
   'vsp/AMBuilder',
 ]
 
@@ -398,4 +398,4 @@ if builder.backend == 'amb2':
     'PackageScript',
   ]
 
-builder.RunBuildScripts(BuildScripts, { 'HLTVSupport': HLTVSupport })
+builder.RunBuildScripts(BuildScripts, { 'Extension': Extension })

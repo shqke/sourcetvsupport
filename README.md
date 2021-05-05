@@ -10,7 +10,7 @@ More information about SourceTV on wiki: https://developer.valvesoftware.com/wik
 
 Requirements
 ------
-- [MM:Source](https://www.sourcemm.net/)
+- [MM:Source (1.10+)](https://www.sourcemm.net/)
 - [SourceMod (1.8+)](https://www.sourcemod.net/)
 
 Supported Games
@@ -28,6 +28,8 @@ Installation
 Also Recommended
 ------
 [[L4D/2] Unlink Camera Entities](https://github.com/shqke/sp_public/tree/master/disable_cameras) - fixes multiple potential visual bugs on round restart, such as missing HUD and viewmodel for spectators after "finale vehicle escape" sequence team swap.
+
+[[L4D/2] Automated Demo Recording](https://github.com/shqke/sp_public/tree/master/autorecorder) - automates demo recording process based on player count.
 
 Command Line Parameters
 ------

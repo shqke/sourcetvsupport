@@ -3,7 +3,7 @@
 
 // VSP Interface
 #include <iserverplugin.h>
-#include "../core/smsdk_config.h"
+#include "../extension/smsdk_config.h"
 
 class VSPPlugin :
 	public IServerPluginCallbacks
