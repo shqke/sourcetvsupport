@@ -19,6 +19,8 @@ IServerGameEnts* gameents = NULL;
 IBinTools* bintools = NULL;
 ISDKTools* sdktools = NULL;
 
+CGlobalVars* gpGlobals = NULL;
+
 IServer* g_pGameIServer = NULL;
 
 int CBasePlayer::sendprop_m_fFlags = 0;
@@ -534,8 +536,7 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 	CNetworkStringTable* pStringTableGameRules = static_cast<CNetworkStringTable*>(pServer->m_StringTables()->FindTable("GameRulesCreation"));
 	if (pStringTableGameRules != NULL) {
 		// This would copy itemchange_s contents into CNetworkStringTableItem without reallocation
-		// 30 is a value that you get from itemchange_s
-		pStringTableGameRules->RestoreTick(30);
+		pStringTableGameRules->RestoreTick(TIME_TO_TICKS(1));
 	}
 
 	// bug##: in CHLTVServer::StartMaster, bot is executing "spectate" command which does nothing and it keeps him in unassigned team (index 0)
@@ -759,6 +760,8 @@ bool SMExtension::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, b
 	GET_V_IFACE_CURRENT(GetServerFactory, hltvdirector, IHLTVDirector, INTERFACEVERSION_HLTVDIRECTOR);
 	GET_V_IFACE_CURRENT(GetServerFactory, playerinfomanager, IPlayerInfoManager, INTERFACEVERSION_PLAYERINFOMANAGER);
 	GET_V_IFACE_CURRENT(GetServerFactory, gameents, IServerGameEnts, INTERFACEVERSION_SERVERGAMEENTS);
+
+	gpGlobals = ismm->GetCGlobals();
 
 	// For ConVarRef
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pCVar, ICvar, CVAR_INTERFACE_VERSION);

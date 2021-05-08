@@ -29,6 +29,9 @@ extern IPlayerInfoManager* playerinfomanager;
 #include "sdk/engine/demo.h"
 #include "sdk/engine/clientframe.h"
 
+#define TICK_INTERVAL			(gpGlobals->interval_per_tick)
+#define TIME_TO_TICKS( dt )		( (int)( 0.5f + (float)(dt) / TICK_INTERVAL ) )
+
 class CDetour;
 
 void DataTable_WriteClassInfosBuffer(ServerClass* pClasses, bf_write* pBuf)
