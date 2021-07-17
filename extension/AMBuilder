@@ -1,9 +1,7 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
-import os.path
+import os
 
-projectName = 'sourcetvsupport'
-
-project = Extension.HL2Project(builder, projectName + '.ext')
+project = builder.LibraryProject('sourcetvsupport')
 project.sources += [
   'extension.cpp',
   os.path.join(Extension.sm_root, 'public', 'smsdk_ext.cpp'),
@@ -25,6 +23,11 @@ if os.path.isdir(libudis_folder):
 
 for sdk_name in Extension.sdks:
   sdk = Extension.sdks[sdk_name]
-  Extension.HL2Config(project, projectName + '.ext.' + sdk.ext, sdk)
+  
+  for cxx in builder.targets:
+    if not cxx.target.arch in sdk.platformSpec[cxx.target.platform]:
+      continue
+    
+    binary = Extension.HL2ExtConfig(project, builder, cxx, 'sourcetvsupport.ext.' + sdk.ext, sdk)
 
 Extension.extensions += builder.Add(project)

@@ -1,11 +1,20 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
-project = Extension.HL2Project(builder, 'vsp')
+import os
+
+project = builder.LibraryProject('vsp')
 project.sources += [
   'plugin_vsp.cpp',
 ]
 
 for sdk_name in Extension.sdks:
   sdk = Extension.sdks[sdk_name]
-  Extension.HL2Config(project, 'vsp_' + sdk.name, sdk)
+
+  for cxx in builder.targets:
+    if not cxx.target.arch in sdk.platformSpec[cxx.target.platform]:
+      continue
+
+    # vsp will not be recognized from vdf correctly with dots present in name
+    binary = Extension.HL2ExtConfig(project, builder, cxx, 'vsp_' + sdk.ext, sdk)
+    binary.compiler.defines += ['HAVE_STRING_H'];
 
 Extension.binaries += builder.Add(project)
