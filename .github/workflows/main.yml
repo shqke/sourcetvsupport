@@ -1,4 +1,4 @@
-name: build
+name: CI
 
 on:
   push:
@@ -136,16 +136,16 @@ jobs:
         with:
           path: src
           
-      - name: Compiling SourceTVSupport files
+      - name: Compiling ${{ github.event.repository.name }} files
         working-directory: src
         run: |
           mkdir build
           cd build
-          python ../configure.py --enable-optimize --sdks=present --sm-path="${{ github.workspace }}/sourcemod-${{ matrix.sm_version }}" --mms-path="${{ github.workspace }}/metamod-${{ matrix.meta_version }}"
+          python ../configure.py --enable-optimize --sm-path="${{ github.workspace }}/sourcemod-${{ matrix.sm_version }}" --mms-path="${{ github.workspace }}/metamod-${{ matrix.meta_version }}"
           ambuild
           
       - name: Uploading package
         uses: actions/upload-artifact@v2
         with:
-          name: sourcetvsupport-sm${{ matrix.sm_version }}-${{ matrix.os_short }}-${{ env.GITHUB_SHA_SHORT }}
+          name: ${{ github.event.repository.name }}-sm${{ matrix.sm_version }}-${{ matrix.os_short }}-${{ env.GITHUB_SHA_SHORT }}
           path: src/build/package
