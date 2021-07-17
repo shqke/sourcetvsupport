@@ -61,7 +61,7 @@ public:
 	// the universe this client is connecting to
 	virtual EUniverse GetConnectedUniverse() = 0;
 
-	// Steam server time - in PST, number of seconds since January 1, 1970 (i.e unix time)
+	// Steam server time.  Number of seconds since January 1, 1970, GMT (i.e unix time)
 	virtual uint32 GetServerRealTime() = 0;
 
 	// returns the 2 digit ISO 3166-1-alpha-2 format country code this client is running in (as looked up via an IP-to-location database)
@@ -159,9 +159,19 @@ public:
 
 	// ask SteamUI to create and render its OpenVR dashboard
 	virtual void StartVRDashboard() = 0;
+
+	// Returns true if the HMD content will be streamed via Steam In-Home Streaming
+	virtual bool IsVRHeadsetStreamingEnabled() = 0;
+
+	// Set whether the HMD content will be streamed via Steam In-Home Streaming
+	// If this is set to true, then the scene in the HMD headset will be streamed, and remote input will not be allowed.
+	// If this is set to false, then the application window will be streamed instead, and remote input will be allowed.
+	// The default is true unless "VRHeadsetStreaming" "0" is in the extended appinfo for a game.
+	// (this is useful for games that have asymmetric multiplayer gameplay)
+	virtual void SetVRHeadsetStreamingEnabled( bool bEnabled ) = 0;
 };
 
-#define STEAMUTILS_INTERFACE_VERSION "SteamUtils008"
+#define STEAMUTILS_INTERFACE_VERSION "SteamUtils009"
 
 
 // callbacks

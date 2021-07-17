@@ -17,11 +17,11 @@ extern IPlayerInfoManager* playerinfomanager;
 
 // ref: https://partner.steamgames.com/downloads/list
 // Left 4 Dead - sdk v1.06
-// Left 4 Dead 2 - sdk v1.37
+// Left 4 Dead 2 - sdk v1.41
 
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
-#include "steamworks_sdk_137/public/steam/steam_gameserver.h"
-#include "steamworks_sdk_137/public/steam/steamclientpublic.h"
+#include "steamworks_sdk_141/public/steam/steam_gameserver.h"
+#include "steamworks_sdk_141/public/steam/steamclientpublic.h"
 #else
 #include "steamworks_sdk_106/public/steam/steamclientpublic.h"
 #endif

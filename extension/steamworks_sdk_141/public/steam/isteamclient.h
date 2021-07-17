@@ -21,7 +21,7 @@
 #define REFERENCE(arg) ((void)arg)
 #endif
 
-#if defined(STEAM_API_EXPORTS) && !defined(API_GEN)
+#if ( defined(STEAM_API_EXPORTS) || defined(STEAM_API_NODLL) ) && !defined(API_GEN)
 #define STEAM_PRIVATE_API( ... ) __VA_ARGS__
 #elif defined(STEAM_API_EXPORTS) && defined(API_GEN)
 #define STEAM_PRIVATE_API( ... )
@@ -107,6 +107,7 @@ class ISteamAppList;
 class ISteamHTMLSurface;
 class ISteamInventory;
 class ISteamVideo;
+class ISteamParentalSettings;
 
 //-----------------------------------------------------------------------------
 // Purpose: Interface to creating a new steam instance, or to
@@ -237,6 +238,9 @@ public:
 
 	// Video
 	virtual ISteamVideo *GetISteamVideo( HSteamUser hSteamuser, HSteamPipe hSteamPipe, const char *pchVersion ) = 0;
+
+	// Parental controls
+	virtual ISteamParentalSettings *GetISteamParentalSettings( HSteamUser hSteamuser, HSteamPipe hSteamPipe, const char *pchVersion ) = 0;
 };
 
 
@@ -294,6 +298,8 @@ enum { k_iSteamHTMLSurfaceCallbacks = 4500 };
 enum { k_iClientVideoCallbacks = 4600 };
 enum { k_iClientInventoryCallbacks = 4700 };
 enum { k_iClientBluetoothManagerCallbacks = 4800 };
+enum { k_iClientSharedConnectionCallbacks = 4900 };
+enum { k_ISteamParentalSettingsCallbacks = 5000 };
 
 //-----------------------------------------------------------------------------
 // The CALLBACK macros are for client side callback logging enabled with

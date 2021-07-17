@@ -92,6 +92,12 @@ enum EUGCQuery
 	k_EUGCQuery_RankedByVotesUp								  = 10,
 	k_EUGCQuery_RankedByTextSearch							  = 11,
 	k_EUGCQuery_RankedByTotalUniqueSubscriptions			  = 12,
+	k_EUGCQuery_RankedByPlaytimeTrend						  = 13,
+	k_EUGCQuery_RankedByTotalPlaytime						  = 14,
+	k_EUGCQuery_RankedByAveragePlaytimeTrend				  = 15,
+	k_EUGCQuery_RankedByLifetimeAveragePlaytime				  = 16,
+	k_EUGCQuery_RankedByPlaytimeSessionsTrend				  = 17,
+	k_EUGCQuery_RankedByLifetimePlaytimeSessions			  = 18,
 };
 
 enum EItemUpdateStatus
@@ -117,14 +123,19 @@ enum EItemState
 
 enum EItemStatistic
 {
-	k_EItemStatistic_NumSubscriptions		= 0,
-	k_EItemStatistic_NumFavorites			= 1,
-	k_EItemStatistic_NumFollowers			= 2,
-	k_EItemStatistic_NumUniqueSubscriptions = 3,
-	k_EItemStatistic_NumUniqueFavorites		= 4,
-	k_EItemStatistic_NumUniqueFollowers		= 5,
-	k_EItemStatistic_NumUniqueWebsiteViews	= 6,
-	k_EItemStatistic_ReportScore			= 7,
+	k_EItemStatistic_NumSubscriptions					 = 0,
+	k_EItemStatistic_NumFavorites						 = 1,
+	k_EItemStatistic_NumFollowers						 = 2,
+	k_EItemStatistic_NumUniqueSubscriptions				 = 3,
+	k_EItemStatistic_NumUniqueFavorites					 = 4,
+	k_EItemStatistic_NumUniqueFollowers					 = 5,
+	k_EItemStatistic_NumUniqueWebsiteViews				 = 6,
+	k_EItemStatistic_ReportScore						 = 7,
+	k_EItemStatistic_NumSecondsPlayed					 = 8,
+	k_EItemStatistic_NumPlaytimeSessions				 = 9,
+	k_EItemStatistic_NumComments						 = 10,
+	k_EItemStatistic_NumSecondsPlayedDuringTimePeriod	 = 11,
+	k_EItemStatistic_NumPlaytimeSessionsDuringTimePeriod = 12,
 };
 
 enum EItemPreviewType
@@ -206,7 +217,7 @@ public:
 	virtual bool GetQueryUGCPreviewURL( UGCQueryHandle_t handle, uint32 index, OUT_STRING_COUNT(cchURLSize) char *pchURL, uint32 cchURLSize ) = 0;
 	virtual bool GetQueryUGCMetadata( UGCQueryHandle_t handle, uint32 index, OUT_STRING_COUNT(cchMetadatasize) char *pchMetadata, uint32 cchMetadatasize ) = 0;
 	virtual bool GetQueryUGCChildren( UGCQueryHandle_t handle, uint32 index, PublishedFileId_t* pvecPublishedFileID, uint32 cMaxEntries ) = 0;
-	virtual bool GetQueryUGCStatistic( UGCQueryHandle_t handle, uint32 index, EItemStatistic eStatType, uint32 *pStatValue ) = 0;
+	virtual bool GetQueryUGCStatistic( UGCQueryHandle_t handle, uint32 index, EItemStatistic eStatType, uint64 *pStatValue ) = 0;
 	virtual uint32 GetQueryUGCNumAdditionalPreviews( UGCQueryHandle_t handle, uint32 index ) = 0;
 	virtual bool GetQueryUGCAdditionalPreview( UGCQueryHandle_t handle, uint32 index, uint32 previewIndex, OUT_STRING_COUNT(cchURLSize) char *pchURLOrVideoID, uint32 cchURLSize, OUT_STRING_COUNT(cchURLSize) char *pchOriginalFileName, uint32 cchOriginalFileNameSize, EItemPreviewType *pPreviewType ) = 0;
 	virtual uint32 GetQueryUGCNumKeyValueTags( UGCQueryHandle_t handle, uint32 index ) = 0;
@@ -218,12 +229,14 @@ public:
 	// Options to set for querying UGC
 	virtual bool AddRequiredTag( UGCQueryHandle_t handle, const char *pTagName ) = 0;
 	virtual bool AddExcludedTag( UGCQueryHandle_t handle, const char *pTagName ) = 0;
+	virtual bool SetReturnOnlyIDs( UGCQueryHandle_t handle, bool bReturnOnlyIDs ) = 0;
 	virtual bool SetReturnKeyValueTags( UGCQueryHandle_t handle, bool bReturnKeyValueTags ) = 0;
 	virtual bool SetReturnLongDescription( UGCQueryHandle_t handle, bool bReturnLongDescription ) = 0;
 	virtual bool SetReturnMetadata( UGCQueryHandle_t handle, bool bReturnMetadata ) = 0;
 	virtual bool SetReturnChildren( UGCQueryHandle_t handle, bool bReturnChildren ) = 0;
 	virtual bool SetReturnAdditionalPreviews( UGCQueryHandle_t handle, bool bReturnAdditionalPreviews ) = 0;
 	virtual bool SetReturnTotalOnly( UGCQueryHandle_t handle, bool bReturnTotalOnly ) = 0;
+	virtual bool SetReturnPlaytimeStats( UGCQueryHandle_t handle, uint32 unDays ) = 0;
 	virtual bool SetLanguage( UGCQueryHandle_t handle, const char *pchLanguage ) = 0;
 	virtual bool SetAllowCachedResponse( UGCQueryHandle_t handle, uint32 unMaxAgeSeconds ) = 0;
 
@@ -302,9 +315,37 @@ public:
 
 	// SuspendDownloads( true ) will suspend all workshop downloads until SuspendDownloads( false ) is called or the game ends
 	virtual void SuspendDownloads( bool bSuspend ) = 0;
+
+	// usage tracking
+	CALL_RESULT( StartPlaytimeTrackingResult_t )
+	virtual SteamAPICall_t StartPlaytimeTracking( PublishedFileId_t *pvecPublishedFileID, uint32 unNumPublishedFileIDs ) = 0;
+	CALL_RESULT( StopPlaytimeTrackingResult_t )
+	virtual SteamAPICall_t StopPlaytimeTracking( PublishedFileId_t *pvecPublishedFileID, uint32 unNumPublishedFileIDs ) = 0;
+	CALL_RESULT( StopPlaytimeTrackingResult_t )
+	virtual SteamAPICall_t StopPlaytimeTrackingForAllItems() = 0;
+
+	// parent-child relationship or dependency management
+	CALL_RESULT( AddUGCDependencyResult_t )
+	virtual SteamAPICall_t AddDependency( PublishedFileId_t nParentPublishedFileID, PublishedFileId_t nChildPublishedFileID ) = 0;
+	CALL_RESULT( RemoveUGCDependencyResult_t )
+	virtual SteamAPICall_t RemoveDependency( PublishedFileId_t nParentPublishedFileID, PublishedFileId_t nChildPublishedFileID ) = 0;
+
+	// add/remove app dependence/requirements (usually DLC)
+	CALL_RESULT( AddAppDependencyResult_t )
+	virtual SteamAPICall_t AddAppDependency( PublishedFileId_t nPublishedFileID, AppId_t nAppID ) = 0;
+	CALL_RESULT( RemoveAppDependencyResult_t )
+	virtual SteamAPICall_t RemoveAppDependency( PublishedFileId_t nPublishedFileID, AppId_t nAppID ) = 0;
+	// request app dependencies. note that whatever callback you register for GetAppDependenciesResult_t may be called multiple times
+	// until all app dependencies have been returned
+	CALL_RESULT( GetAppDependenciesResult_t )
+	virtual SteamAPICall_t GetAppDependencies( PublishedFileId_t nPublishedFileID ) = 0;
+	
+	// delete the item without prompting the user
+	CALL_RESULT( DeleteItemResult_t )
+	virtual SteamAPICall_t DeleteItem( PublishedFileId_t nPublishedFileID ) = 0;
 };
 
-#define STEAMUGC_INTERFACE_VERSION "STEAMUGC_INTERFACE_VERSION008"
+#define STEAMUGC_INTERFACE_VERSION "STEAMUGC_INTERFACE_VERSION010"
 
 //-----------------------------------------------------------------------------
 // Purpose: Callback for querying UGC
@@ -351,6 +392,7 @@ struct SubmitItemUpdateResult_t
 	enum { k_iCallback = k_iClientUGCCallbacks + 4 };
 	EResult m_eResult;
 	bool m_bUserNeedsToAcceptWorkshopLegalAgreement;
+	PublishedFileId_t m_nPublishedFileId;
 };
 
 
@@ -409,6 +451,93 @@ struct GetUserItemVoteResult_t
 	bool m_bVotedUp;
 	bool m_bVotedDown;
 	bool m_bVoteSkipped;
+};
+
+//-----------------------------------------------------------------------------
+// Purpose: The result of a call to StartPlaytimeTracking()
+//-----------------------------------------------------------------------------
+struct StartPlaytimeTrackingResult_t
+{
+	enum { k_iCallback = k_iClientUGCCallbacks + 10 };
+	EResult m_eResult;
+};
+
+//-----------------------------------------------------------------------------
+// Purpose: The result of a call to StopPlaytimeTracking()
+//-----------------------------------------------------------------------------
+struct StopPlaytimeTrackingResult_t
+{
+	enum { k_iCallback = k_iClientUGCCallbacks + 11 };
+	EResult m_eResult;
+};
+
+//-----------------------------------------------------------------------------
+// Purpose: The result of a call to AddDependency
+//-----------------------------------------------------------------------------
+struct AddUGCDependencyResult_t
+{
+	enum { k_iCallback = k_iClientUGCCallbacks + 12 };
+	EResult m_eResult;
+	PublishedFileId_t m_nPublishedFileId;
+	PublishedFileId_t m_nChildPublishedFileId;
+};
+
+//-----------------------------------------------------------------------------
+// Purpose: The result of a call to RemoveDependency
+//-----------------------------------------------------------------------------
+struct RemoveUGCDependencyResult_t
+{
+	enum { k_iCallback = k_iClientUGCCallbacks + 13 };
+	EResult m_eResult;
+	PublishedFileId_t m_nPublishedFileId;
+	PublishedFileId_t m_nChildPublishedFileId;
+};
+
+
+//-----------------------------------------------------------------------------
+// Purpose: The result of a call to AddAppDependency
+//-----------------------------------------------------------------------------
+struct AddAppDependencyResult_t
+{
+	enum { k_iCallback = k_iClientUGCCallbacks + 14 };
+	EResult m_eResult;
+	PublishedFileId_t m_nPublishedFileId;
+	AppId_t m_nAppID;
+};
+
+//-----------------------------------------------------------------------------
+// Purpose: The result of a call to RemoveAppDependency
+//-----------------------------------------------------------------------------
+struct RemoveAppDependencyResult_t
+{
+	enum { k_iCallback = k_iClientUGCCallbacks + 15 };
+	EResult m_eResult;
+	PublishedFileId_t m_nPublishedFileId;
+	AppId_t m_nAppID;
+};
+
+//-----------------------------------------------------------------------------
+// Purpose: The result of a call to GetAppDependencies.  Callback may be called
+//			multiple times until all app dependencies have been returned.
+//-----------------------------------------------------------------------------
+struct GetAppDependenciesResult_t
+{
+	enum { k_iCallback = k_iClientUGCCallbacks + 16 };
+	EResult m_eResult;
+	PublishedFileId_t m_nPublishedFileId;
+	AppId_t m_rgAppIDs[32];
+	uint32 m_nNumAppDependencies;		// number returned in this struct
+	uint32 m_nTotalNumAppDependencies;	// total found
+};
+
+//-----------------------------------------------------------------------------
+// Purpose: The result of a call to DeleteItem
+//-----------------------------------------------------------------------------
+struct DeleteItemResult_t
+{
+	enum { k_iCallback = k_iClientUGCCallbacks + 17 };
+	EResult m_eResult;
+	PublishedFileId_t m_nPublishedFileId;
 };
 
 #pragma pack( pop )

@@ -771,12 +771,23 @@ bool SMExtension::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, b
 
 bool SMExtension::QueryInterfaceDrop(SMInterface* pInterface)
 {
-	return pInterface != bintools && pInterface != sdktools;
+	if (bintools == pInterface) {
+		return false;
+	}
+
+	if (sdktools == pInterface) {
+		// Unload if sv couldn't be retrieved
+		return g_pGameIServer != NULL;
+	}
+
+	return IExtensionInterface::QueryInterfaceDrop(pInterface);
 }
 
 void SMExtension::NotifyInterfaceDrop(SMInterface* pInterface)
 {
-	SDK_OnUnload();
+	if (bintools == pInterface || ( sdktools == pInterface && g_pGameIServer == NULL )) {
+		SDK_OnUnload();
+	}
 }
 
 bool SMExtension::QueryRunning(char* error, size_t maxlength)
