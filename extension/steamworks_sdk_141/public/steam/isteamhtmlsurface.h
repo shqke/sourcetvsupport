@@ -177,6 +177,10 @@ public:
 	// When background mode is disabled, any video or audio objects with that property will resume with ".play()".
 	virtual void SetBackgroundMode( HHTMLBrowser unBrowserHandle, bool bBackgroundMode ) = 0;
 
+	// Scale the output display space by this factor, this is useful when displaying content on high dpi devices.
+	// Specifies the ratio between physical and logical pixels.
+	virtual void SetDPIScalingFactor( HHTMLBrowser unBrowserHandle, float flDPIScaling ) = 0;
+
 	// CALLBACKS
 	//
 	//  These set of functions are used as responses to callback requests
@@ -197,7 +201,7 @@ public:
 	virtual void FileLoadDialogResponse( HHTMLBrowser unBrowserHandle, const char **pchSelectedFiles ) = 0;
 };
 
-#define STEAMHTMLSURFACE_INTERFACE_VERSION "STEAMHTMLSURFACE_INTERFACE_VERSION_003"
+#define STEAMHTMLSURFACE_INTERFACE_VERSION "STEAMHTMLSURFACE_INTERFACE_VERSION_004"
 
 // callbacks
 #if defined( VALVE_CALLBACK_PACK_SMALL )

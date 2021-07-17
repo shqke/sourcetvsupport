@@ -57,12 +57,6 @@ const uint32 k_cchTagListMax = 1024 + 1;
 const uint32 k_cchFilenameMax = 260;
 const uint32 k_cchPublishedFileURLMax = 256;
 
-// Ways to handle a synchronization conflict
-enum EResolveConflict
-{
-	k_EResolveConflictKeepClient = 1,		// The local version of each file will be used to overwrite the server version
-	k_EResolveConflictKeepServer = 2,		// The server version of each file will be used to overwrite the local version
-};
 
 enum ERemoteStoragePlatform
 {
@@ -208,7 +202,7 @@ class ISteamRemoteStorage
 		virtual const char *GetFileNameAndSize( int iFile, int32 *pnFileSizeInBytes ) = 0;
 
 		// configuration management
-		virtual bool GetQuota( int32 *pnTotalBytes, int32 *puAvailableBytes ) = 0;
+		virtual bool GetQuota( uint64 *pnTotalBytes, uint64 *puAvailableBytes ) = 0;
 		virtual bool IsCloudEnabledForAccount() = 0;
 		virtual bool IsCloudEnabledForApp() = 0;
 		virtual void SetCloudEnabledForApp( bool bEnabled ) = 0;
@@ -297,7 +291,7 @@ class ISteamRemoteStorage
 		virtual SteamAPICall_t	EnumerateUserSharedWorkshopFiles( CSteamID steamId, uint32 unStartIndex, SteamParamStringArray_t *pRequiredTags, SteamParamStringArray_t *pExcludedTags ) = 0;
 		CALL_RESULT( RemoteStoragePublishFileProgress_t )
 		virtual SteamAPICall_t	PublishVideo( EWorkshopVideoProvider eVideoProvider, const char *pchVideoAccount, const char *pchVideoIdentifier, const char *pchPreviewFile, AppId_t nConsumerAppId, const char *pchTitle, const char *pchDescription, ERemoteStoragePublishedFileVisibility eVisibility, SteamParamStringArray_t *pTags ) = 0;
-		CALL_RESULT( RemoteStorageEnumeratePublishedFilesByUserActionResult_t )
+		CALL_RESULT( RemoteStorageSetUserPublishedFileActionResult_t )
 		virtual SteamAPICall_t	SetUserPublishedFileAction( PublishedFileId_t unPublishedFileId, EWorkshopFileAction eAction ) = 0;
 		CALL_RESULT( RemoteStorageEnumeratePublishedFilesByUserActionResult_t )
 		virtual SteamAPICall_t	EnumeratePublishedFilesByUserAction( EWorkshopFileAction eAction, uint32 unStartIndex ) = 0;
@@ -309,7 +303,7 @@ class ISteamRemoteStorage
 		virtual SteamAPICall_t UGCDownloadToLocation( UGCHandle_t hContent, const char *pchLocation, uint32 unPriority ) = 0;
 };
 
-#define STEAMREMOTESTORAGE_INTERFACE_VERSION "STEAMREMOTESTORAGE_INTERFACE_VERSION013"
+#define STEAMREMOTESTORAGE_INTERFACE_VERSION "STEAMREMOTESTORAGE_INTERFACE_VERSION014"
 
 
 // callbacks
@@ -375,15 +369,6 @@ struct RemoteStorageAppSyncStatusCheck_t
 	EResult m_eResult;
 };
 
-//-----------------------------------------------------------------------------
-// Purpose: Sent after a conflict resolution attempt.
-//-----------------------------------------------------------------------------
-struct RemoteStorageConflictResolution_t
-{
-	enum { k_iCallback = k_iClientRemoteStorageCallbacks + 6 };
-	AppId_t m_nAppID;
-	EResult m_eResult;
-};
 
 //-----------------------------------------------------------------------------
 // Purpose: The result of a call to FileShare()

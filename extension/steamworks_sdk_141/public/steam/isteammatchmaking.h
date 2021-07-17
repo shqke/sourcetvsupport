@@ -256,7 +256,7 @@ public:
 	// after completion, the local user will no longer be the owner
 	virtual void CheckForPSNGameBootInvite( unsigned int iGameBootAttributes  ) = 0;
 #endif
-	CALL_BACK( LobbyChatUpdate_t );
+	CALL_BACK( LobbyChatUpdate_t )
 };
 #define STEAMMATCHMAKING_INTERFACE_VERSION "SteamMatchMaking009"
 

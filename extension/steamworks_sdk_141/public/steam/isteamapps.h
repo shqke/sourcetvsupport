@@ -84,6 +84,9 @@ public:
 	// appropriate appid values, ending with a final callback where the m_nAppId
 	// member is k_uAppIdInvalid (zero).
 	virtual void RequestAllProofOfPurchaseKeys() = 0;
+
+	CALL_RESULT( FileDetailsResult_t )
+	virtual SteamAPICall_t GetFileDetails( const char* pszFileName ) = 0;
 };
 
 #define STEAMAPPS_INTERFACE_VERSION "STEAMAPPS_INTERFACE_VERSION008"
@@ -153,6 +156,19 @@ struct AppProofOfPurchaseKeyResponse_t
 	uint32	m_nAppID;
 	uint32	m_cchKeyLength;
 	char	m_rgchKey[k_cubAppProofOfPurchaseKeyMax];
+};
+
+
+//-----------------------------------------------------------------------------
+// Purpose: response to GetFileDetails
+//-----------------------------------------------------------------------------
+struct FileDetailsResult_t
+{
+	enum { k_iCallback = k_iSteamAppsCallbacks + 23 };
+	EResult		m_eResult;
+	uint64		m_ulFileSize;	// original file size in bytes
+	uint8		m_FileSHA[20];	// original file SHA1 hash
+	uint32		m_unFlags;		// 
 };
 
 
