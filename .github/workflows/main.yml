@@ -85,6 +85,14 @@ jobs:
           ref: ${{ matrix.meta_branch }}
           path: metamod-${{ matrix.meta_version }}
           
+      - name: Getting SteamWorks SDK
+        uses: actions/checkout@v2
+        with:
+          repository: shqke/steamworks-sdk
+          ref: v1.41
+          path: steamworks-sdk
+          ssh-key: ${{ secrets.STEAMWORKS_REPO_ACCESS_KEY }}
+          
       - name: Getting AMBuild
         uses: actions/checkout@v2
         with:
@@ -119,11 +127,17 @@ jobs:
           path: src
           
       - name: Compiling ${{ github.event.repository.name }} files
+        shell: bash
         working-directory: src
         run: |
           mkdir build
           cd build
-          python ../configure.py --enable-optimize --sm-path="${{ github.workspace }}/sourcemod-${{ matrix.sm_version }}" --mms-path="${{ github.workspace }}/metamod-${{ matrix.meta_version }}"
+          python \
+            ../configure.py \
+            --enable-optimize \
+            --sm-path="${{ github.workspace }}/sourcemod-${{ matrix.sm_version }}"\
+            --mms-path="${{ github.workspace }}/metamod-${{ matrix.meta_version }}"\
+            --swsdk-path="${{ github.workspace }}/steamworks-sdk"
           ambuild
           
       - name: Uploading package
