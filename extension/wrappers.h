@@ -20,10 +20,10 @@ extern IPlayerInfoManager* playerinfomanager;
 // Left 4 Dead 2 - sdk v1.41
 
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
-#include "steamworks_sdk_141/public/steam/steam_gameserver.h"
-#include "steamworks_sdk_141/public/steam/steamclientpublic.h"
+#include "steam/steam_gameserver.h"
+#include "steam/steamclientpublic.h"
 #else
-#include "steamworks_sdk_106/public/steam/steamclientpublic.h"
+#include "steam/steamclientpublic.h"
 #endif
 
 #include "sdk/engine/demo.h"

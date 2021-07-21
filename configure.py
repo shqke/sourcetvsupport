@@ -25,6 +25,8 @@ parser.options.add_argument('--mms-path', type=str, dest='mms_path', default=Non
                        help='Path to Metamod:Source')
 parser.options.add_argument('--sm-path', type=str, dest='sm_path', default=None,
                        help='Path to SourceMod')
+parser.options.add_argument('--swsdk-path', type=str, dest='swsdk_path', default=None,
+                       help='Path to SteamWorks SDK')
 parser.options.add_argument('--enable-debug', action='store_const', const='1', dest='debug',
                        help='Enable debugging symbols')
 parser.options.add_argument('--enable-optimize', action='store_const', const='1', dest='opt',
