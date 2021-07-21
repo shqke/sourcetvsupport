@@ -14,7 +14,7 @@ for sdk_name in Extension.sdks:
       continue
 
     # vsp will not be recognized from vdf correctly with dots present in name
-    binary = Extension.HL2ExtConfig(project, builder, cxx, 'vsp_' + sdk.ext, sdk)
+    binary = Extension.HL2ExtConfig(project, builder, cxx, 'vsp_' + sdk_name, sdk)
     binary.compiler.defines += ['HAVE_STRING_H'];
 
 Extension.binaries += builder.Add(project)
