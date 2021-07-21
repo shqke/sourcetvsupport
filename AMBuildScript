@@ -96,6 +96,7 @@ class ExtensionConfig(object):
     self.generated_headers = None
     self.mms_root = None
     self.sm_root = None
+    self.swsdk_root = None
     self.all_targets = []
     self.target_archs = set()
 
@@ -176,6 +177,15 @@ class ExtensionConfig(object):
     if not self.mms_root or not os.path.isdir(self.mms_root):
       raise Exception('Could not find a source copy of Metamod:Source')
     self.mms_root = Normalize(self.mms_root)
+
+    if builder.options.swsdk_path:
+      self.swsdk_root = builder.options.swsdk_path
+    else:
+      self.swsdk_root = ResolveEnvPath('STEAMWORKS_SDK_PATH', 'steamworks-sdk')
+
+    if not self.swsdk_root or not os.path.isdir(self.swsdk_root):
+      raise Exception('Could not find a copy of SteamWorks SDK')
+    self.swsdk_root = Normalize(self.swsdk_root)
 
   def configure(self):
     if not set(self.target_archs).issubset(['x86', 'x86_64']):
@@ -410,6 +420,7 @@ class ExtensionConfig(object):
       os.path.join(self.sm_root, 'sourcepawn', 'include'),
       os.path.join(self.sm_root, 'public', 'amtl', 'amtl'),
       os.path.join(self.sm_root, 'public', 'amtl'),
+      os.path.join(self.swsdk_root, 'public'),
     ]
     return compiler
 
