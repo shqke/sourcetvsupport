@@ -60,5 +60,4 @@ Known Issues
 ------
 - Missing arms models/blinking world model attachments during SourceTV footage playback
   - Needed modifications on game client
-- Some models are getting stuck during playback (helicopter on c8m1 after intro)
 - Relay feature is broken
