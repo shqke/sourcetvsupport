@@ -93,12 +93,6 @@ jobs:
           path: steamworks-sdk
           ssh-key: ${{ secrets.STEAMWORKS_REPO_ACCESS_KEY }}
           
-      - name: Getting AMBuild
-        uses: actions/checkout@v2
-        with:
-          repository: alliedmodders/ambuild
-          path: ambuild
-          
       - name: Setting up Python
         uses: actions/setup-python@v2
         
