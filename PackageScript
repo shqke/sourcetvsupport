@@ -30,17 +30,24 @@ def CopyFiles(src, dest, files):
 
 # VDF loader
 CopyFiles('extra', 'addons',
- [ 'sourcetvsupport_vsp_l4d.vdf', 'sourcetvsupport_vsp_l4d2.vdf' ]
+  [
+    'sourcetvsupport_vsp_l4d.vdf',
+    'sourcetvsupport_vsp_l4d2.vdf',
+  ]
 )
 
 # Gamedata file
 CopyFiles('extra', 'addons/sourcemod/gamedata',
- [ 'sourcetvsupport.txt' ]
+  [
+    'sourcetvsupport.txt',
+  ]
 )
 
 # Autoload file
 CopyFiles('extra', 'addons/sourcemod/extensions',
- [ 'sourcetvsupport.autoload' ]
+  [
+    'sourcetvsupport.autoload',
+  ]
 )
 
 # Copy extension
