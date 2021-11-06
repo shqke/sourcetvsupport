@@ -91,7 +91,7 @@ jobs:
           repository: shqke/steamworks-sdk
           ref: v1.41
           path: steamworks-sdk
-          ssh-key: ${{ secrets.STEAMWORKS_REPO_ACCESS_KEY }}
+          token: ${{ secrets.STEAMWORKS_REPO_ACCESS_TOKEN }}
           
       - name: Setting up Python
         uses: actions/setup-python@v2
