@@ -55,6 +55,7 @@ CDetour* CFrameSnapshotManager::detour_LevelChanged = NULL;
 int shookid_CHLTVDemoRecorder_RecordStringTables = 0;
 int shookid_CHLTVDemoRecorder_RecordServerClasses = 0;
 int shookid_SteamGameServer_LogOff = 0;
+int shookid_CServerGameEnts_CheckTransmit = 0;
 
 void* pfn_DataTable_WriteSendTablesBuffer = NULL;
 void* pfn_SteamGameServer_GetHSteamPipe = NULL;
@@ -76,6 +77,7 @@ SH_DECL_HOOK0(IServer, IsPausable, const, 0, bool);
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 SH_DECL_HOOK0_void(ISteamGameServer, LogOff, SH_NOATTRIB, 0);
 #endif
+SH_DECL_HOOK3_void(IServerGameEnts, CheckTransmit, SH_NOATTRIB, 0, CCheckTransmitInfo*, const unsigned short*, int);
 
 // Detours
 #include <CDetour/detours.h>
@@ -510,6 +512,9 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 	SH_REMOVE_HOOK_ID(shookid_CHLTVDemoRecorder_RecordServerClasses);
 	shookid_CHLTVDemoRecorder_RecordServerClasses = 0;
 
+	SH_REMOVE_HOOK_ID(shookid_CServerGameEnts_CheckTransmit);
+	shookid_CServerGameEnts_CheckTransmit = 0;
+
 	if (pIHLTVServer == NULL) {
 		return;
 	}
@@ -532,6 +537,8 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 	CHLTVDemoRecorder& demoRecorder = pHLTVServer->m_DemoRecorder();
 	shookid_CHLTVDemoRecorder_RecordStringTables = SH_ADD_HOOK(CHLTVDemoRecorder, RecordStringTables, &demoRecorder, SH_MEMBER(this, &SMExtension::Handler_CHLTVDemoRecorder_RecordStringTables), false);
 	shookid_CHLTVDemoRecorder_RecordServerClasses = SH_ADD_HOOK(CHLTVDemoRecorder, RecordServerClasses, &demoRecorder, SH_MEMBER(this, &SMExtension::Handler_CHLTVDemoRecorder_RecordServerClasses), false);
+
+	shookid_CServerGameEnts_CheckTransmit = SH_ADD_HOOK(IServerGameEnts, CheckTransmit, gameents, SH_MEMBER(this, &SMExtension::Handler_CServerGameEnts_CheckTransmit), true);
 
 	CNetworkStringTable* pStringTableGameRules = static_cast<CNetworkStringTable*>(pServer->m_StringTables()->FindTable("GameRulesCreation"));
 	if (pStringTableGameRules != NULL) {
@@ -690,6 +697,44 @@ void SMExtension::Handler_CHLTVServer_FillServerInfo(SVC_ServerInfo& serverinfo)
 {
 	// feature request #12 - allow addons in demos
 	serverinfo.m_bIsVanilla = false;
+}
+
+void SMExtension::Handler_CServerGameEnts_CheckTransmit(CCheckTransmitInfo* pInfo, const unsigned short* pEdictIndices, int nEdicts)
+{
+	SET_META_RESULT(MRES_OVERRIDE);
+
+	IGamePlayer* pRecipientPlayer = playerhelpers->GetGamePlayer(pInfo->m_pClientEnt);
+	if (pRecipientPlayer == NULL) {
+		return;
+	}
+
+	if (!pRecipientPlayer->IsSourceTV()) {
+		return;
+	}
+
+	int maxClients = playerhelpers->GetMaxClients();
+
+	for (int i = 0; i < nEdicts; i++) {
+		int iEdict = pEdictIndices[i];
+		if (iEdict > maxClients) {
+			break;
+		}
+
+		// bug##: if hltvdirector follows a bot player and tv_transmitall is set to 0, world entities won't be transmitted
+		// reason being PVSInfo_t::m_vCenter never set on bots
+		edict_t* pEdict = &gpGlobals->pEdicts[iEdict];
+
+		IServerNetworkable* pNetworkable = pEdict->GetNetworkable();
+		if (pNetworkable != NULL) {
+			//if (hltvdirector->GetPVSEntity() != iEdict) {
+			//	continue;
+			//}
+
+			// @see CBasePlayer::ShouldTransmit
+			// HACK: force calling RecomputePVSInformation to update PVS data
+			pNetworkable->AreaNum();
+		}
+	}
 }
 
 bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)

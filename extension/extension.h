@@ -73,6 +73,7 @@ public: // SourceHook callbacks
 	void Handler_ISteamGameServer_LogOff();
 	bool Handler_CGameServer_IsPausable() const;
 	void Handler_CHLTVServer_FillServerInfo(SVC_ServerInfo& serverinfo);
+	void Handler_CServerGameEnts_CheckTransmit(CCheckTransmitInfo* pInfo, const unsigned short* pEdictIndices, int nEdicts);
 
 public: // SDKExtension
 	/**
