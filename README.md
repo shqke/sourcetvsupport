@@ -54,6 +54,7 @@ Fixed Issues
 - SourceTV bot doesn't take a human slot and doesn't count as a potential voter
 - "CUtlRBTree overflow" on level transition
 - Broken demos on early recording (tv_autorecord)
+- Disabled `tv_transmitall` would leave bots PVS data empty
 - (feature) Allowed addons for HLTV clients and in demo playback
 
 Known Issues
