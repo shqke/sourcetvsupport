@@ -31,6 +31,8 @@ Also Recommended
 
 [[L4D/2] Automated Demo Recording](https://github.com/shqke/sp_public/tree/master/autorecorder) - automates demo recording process based on player count.
 
+[Manage HLTV Cameras](https://github.com/shqke/sp_public/tree/master/hltv_cameras) - adds missing fixed cameras for HLTV Director.
+
 Command Line Parameters
 ------
 - `+tv_enable 1` - Make SourceTV available on first map start (don't require to `changelevel`/`map`)
