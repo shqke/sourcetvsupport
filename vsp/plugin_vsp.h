@@ -14,9 +14,7 @@ public: // IServerPluginCallbacks
 	bool Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory) override;
 
 	// Called when the plugin should be shutdown
-	void Unload(void) override
-	{
-	}
+	void Unload(void) override;
 
 	// called when a plugins execution is stopped but the plugin is not unloaded
 	void Pause(void) override
@@ -31,7 +29,7 @@ public: // IServerPluginCallbacks
 	// Returns string describing current plugin.  e.g., Admin-Mod.  
 	const char* GetPluginDescription(void) override
 	{
-		return SMEXT_CONF_NAME " (VSP) - Cvar Unlocker";
+		return SMEXT_CONF_NAME " (VSP) [" SMEXT_CONF_VERSION "]";
 	}
 
 	// Called any time a new level is started (after GameInit() also on level transitions within a game)

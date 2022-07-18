@@ -1,5 +1,5 @@
 #include "plugin_vsp.h"
-#include <icvar.h>
+#include "patch_body.h"
 
 EXPOSE_SINGLE_INTERFACE(VSPPlugin, IServerPluginCallbacks, INTERFACEVERSION_ISERVERPLUGINCALLBACKS);
 
@@ -7,7 +7,7 @@ bool VSPPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameS
 {
 	g_pCVar = static_cast<ICvar*>(interfaceFactory(CVAR_INTERFACE_VERSION, NULL));
 	if (g_pCVar == NULL) {
-		fprintf(stderr, PLUGIN_LOG_PREFIX "Couldn't retrieve interface \"" CVAR_INTERFACE_VERSION "\"\n");
+		Warning(PLUGIN_LOG_PREFIX "Couldn't retrieve interface \"" CVAR_INTERFACE_VERSION "\"\n");
 
 		return false;
 	}
@@ -48,7 +48,7 @@ bool VSPPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameS
 	for (auto&& name : cvars) {
 		ConVar* pCvar = g_pCVar->FindVar(name);
 		if (pCvar == NULL) {
-			fprintf(stderr, PLUGIN_LOG_PREFIX "Couldn't find convar \"%s\"\n", name);
+			Warning(PLUGIN_LOG_PREFIX "Couldn't find convar \"%s\"\n", name);
 
 			continue;
 		}
@@ -57,7 +57,12 @@ bool VSPPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameS
 		pCvar->RemoveFlags(FCVAR_DEVELOPMENTONLY);
 	}
 
-	printf(PLUGIN_LOG_PREFIX "SourceTV related convars (%u out of %u) were successfully exposed. Unloading...\n", handled, NELEMS(cvars));
+	Msg(PLUGIN_LOG_PREFIX "SourceTV related convars (%u out of %u) were successfully exposed.\n", handled, NELEMS(cvars));
 
-	return false;
+	return Detour_C_BaseEntity__SetParent.LoadDetour();
+}
+
+void VSPPlugin::Unload(void)
+{
+	Detour_C_BaseEntity__SetParent.UnloadDetour();
 }

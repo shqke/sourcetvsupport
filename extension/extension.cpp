@@ -1,10 +1,11 @@
-﻿#include "extension.h"
+﻿#include <vector>
+
+#include "extension.h"
 #include "wrappers.h"
 
 #include "sdk/public/engine/inetsupport.h"
 #include "sdk/engine/networkstringtable.h"
 
-#include <vector>
 #include <am-string.h>
 #include <checksum_crc.h>
 #include <extensions/IBinTools.h>
@@ -335,7 +336,7 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 
 	for (auto&& el : s_offsets) {
 		if (!gc->GetOffset(el.key, &el.offset)) {
-			ke::SafeSprintf(error, maxlength, "Unable to get offset for \"%s\" from game config (file: \"" GAMEDATA_FILE ".txt\")", el.key);
+			snprintf(error, maxlength, "Unable to get offset for \"%s\" from game config (file: \"" GAMEDATA_FILE ".txt\")", el.key);
 
 			return false;
 		}
@@ -360,13 +361,13 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 
 	for (auto&& el : s_sigs) {
 		if (!gc->GetMemSig(el.key, &el.address)) {
-			ke::SafeSprintf(error, maxlength, "Unable to find signature for \"%s\" from game config (file: \"" GAMEDATA_FILE ".txt\")", el.key);
+			snprintf(error, maxlength, "Unable to find signature for \"%s\" from game config (file: \"" GAMEDATA_FILE ".txt\")", el.key);
 
 			return false;
 		}
 
 		if (el.address == NULL) {
-			ke::SafeSprintf(error, maxlength, "Sigscan for \"%s\" failed (game config file: \"" GAMEDATA_FILE ".txt\")", el.key);
+			snprintf(error, maxlength, "Sigscan for \"%s\" failed (game config file: \"" GAMEDATA_FILE ".txt\")", el.key);
 
 			return false;
 		}
@@ -384,7 +385,7 @@ bool SMExtension::SetupFromSteamAPILibrary(char* error, int maxlength)
 	char libError[512];
 	ke::RefPtr<ke::SharedLib> steam_api = ke::SharedLib::Open(path, libError, sizeof(libError));
 	if (!steam_api) {
-		ke::SafeSprintf(error, maxlength, "Unable to load library \"%s\" (reason: \"%s\")", path, libError);
+		snprintf(error, maxlength, "Unable to load library \"%s\" (reason: \"%s\")", path, libError);
 
 		return false;
 	}
@@ -402,7 +403,7 @@ bool SMExtension::SetupFromSteamAPILibrary(char* error, int maxlength)
 	for (auto&& el : s_symbols) {
 		el.address = steam_api->lookup(el.symbol);
 		if (el.address == NULL) {
-			ke::SafeSprintf(error, maxlength, "Unable to find symbol \"%s\" (file: \"%s\")", el.symbol, path);
+			snprintf(error, maxlength, "Unable to find symbol \"%s\" (file: \"%s\")", el.symbol, path);
 
 			return false;
 		}
@@ -420,14 +421,14 @@ bool SMExtension::CreateDetours(char* error, size_t maxlength)
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 	detour_SteamInternal_GameServer_Init = DETOUR_CREATE_STATIC(Handler_SteamInternal_GameServer_Init, pfn_SteamInternal_GameServer_Init);
 	if (detour_SteamInternal_GameServer_Init == NULL) {
-		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"SteamInternal_GameServer_Init\"");
+		strncpy(error, "Unable to create a detour for \"SteamInternal_GameServer_Init\"", maxlength);
 
 		return false;
 	}
 
 	CBaseClient::detour_SendFullConnectEvent = DETOUR_CREATE_MEMBER(Handler_CBaseClient_SendFullConnectEvent, CBaseClient::pfn_SendFullConnectEvent);
 	if (CBaseClient::detour_SendFullConnectEvent == NULL) {
-		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"CBaseClient::SendFullConnectEvent\"");
+		strncpy(error, "Unable to create a detour for \"CBaseClient::SendFullConnectEvent\"", maxlength);
 
 		return false;
 	}
@@ -435,28 +436,28 @@ bool SMExtension::CreateDetours(char* error, size_t maxlength)
 
 	CBaseServer::detour_IsExclusiveToLobbyConnections = DETOUR_CREATE_MEMBER(Handler_CBaseServer_IsExclusiveToLobbyConnections, CBaseServer::pfn_IsExclusiveToLobbyConnections);
 	if (CBaseServer::detour_IsExclusiveToLobbyConnections == NULL) {
-		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"CBaseServer::IsExclusiveToLobbyConnections\"");
+		strncpy(error, "Unable to create a detour for \"CBaseServer::IsExclusiveToLobbyConnections\"", maxlength);
 
 		return false;
 	}
 
 	CSteam3Server::detour_NotifyClientDisconnect = DETOUR_CREATE_MEMBER(Handler_CSteam3Server_NotifyClientDisconnect, CSteam3Server::pfn_NotifyClientDisconnect);
 	if (CSteam3Server::detour_NotifyClientDisconnect == NULL) {
-		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"CSteam3Server::NotifyClientDisconnect\"");
+		strncpy(error, "Unable to create a detour for \"CSteam3Server::NotifyClientDisconnect\"", maxlength);
 
 		return false;
 	}
 
 	CHLTVServer::detour_AddNewFrame = DETOUR_CREATE_MEMBER(Handler_CHLTVServer_AddNewFrame, CHLTVServer::pfn_AddNewFrame);
 	if (CHLTVServer::detour_AddNewFrame == NULL) {
-		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"CHLTVServer::AddNewFrame\"");
+		strncpy(error, "Unable to create a detour for \"CHLTVServer::AddNewFrame\"", maxlength);
 
 		return false;
 	}
 
 	CFrameSnapshotManager::detour_LevelChanged = DETOUR_CREATE_MEMBER(Handler_CFrameSnapshotManager_LevelChanged, CFrameSnapshotManager::pfn_LevelChanged);
 	if (CFrameSnapshotManager::detour_LevelChanged == NULL) {
-		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"CFrameSnapshotManager::LevelChanged\"");
+		strncpy(error, "Unable to create a detour for \"CFrameSnapshotManager::LevelChanged\"", maxlength);
 
 		return false;
 	}
@@ -741,7 +742,7 @@ bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 {
 	sm_sendprop_info_t info;
 	if (!gamehelpers->FindSendPropInfo("CBasePlayer", "m_fFlags", &info)) {
-		ke::SafeStrcpy(error, maxlength, "Unable to find SendProp \"CBasePlayer::m_fFlags\"");
+		strncpy(error, "Unable to find SendProp \"CBasePlayer::m_fFlags\"", maxlength);
 
 		return false;
 	}
@@ -750,7 +751,7 @@ bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 
 	IGameConfig* gc = NULL;
 	if (!gameconfs->LoadGameConfigFile(GAMEDATA_FILE, &gc, error, maxlength)) {
-		ke::SafeStrcpy(error, maxlength, "Unable to load a gamedata file \"" GAMEDATA_FILE ".txt\"");
+		strncpy(error, "Unable to load a gamedata file \"" GAMEDATA_FILE ".txt\"", maxlength);
 
 		return false;
 	}

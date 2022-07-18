@@ -184,7 +184,7 @@ class ExtensionConfig(object):
       self.swsdk_root = ResolveEnvPath('STEAMWORKS_SDK_PATH', 'steamworks-sdk')
 
     if not self.swsdk_root or not os.path.isdir(self.swsdk_root):
-      raise Exception('Could not find a copy of SteamWorks SDK')
+      raise Exception('Could not find a copy of SteamWorks SDK - https://partner.steamgames.com/ ')
     self.swsdk_root = Normalize(self.swsdk_root)
 
   def configure(self):
@@ -327,6 +327,7 @@ class ExtensionConfig(object):
       '/EHsc',
       '/GR-',
       '/TP',
+      '/std:c++17',
     ]
     cxx.linkflags += [
       'kernel32.lib',
