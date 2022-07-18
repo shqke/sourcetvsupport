@@ -25,7 +25,6 @@ jobs:
           - windows-latest
           
         sm_version:
-          - "1.8"
           - "1.9"
           - "1.10"
           - "1.11"
@@ -40,9 +39,6 @@ jobs:
             sm_branch: master
             meta_version: latest
             meta_branch: master
-            
-          - sm_version: "1.8"
-            sm_branch: "1.8-dev"
             
           - sm_version: "1.9"
             sm_branch: "1.9-dev"
