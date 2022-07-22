@@ -1,11 +1,10 @@
-﻿#include <vector>
-
-#include "extension.h"
+﻿#include "extension.h"
 #include "wrappers.h"
 
 #include "sdk/public/engine/inetsupport.h"
 #include "sdk/engine/networkstringtable.h"
 
+#include <vector>
 #include <am-string.h>
 #include <checksum_crc.h>
 #include <extensions/IBinTools.h>

@@ -327,7 +327,6 @@ class ExtensionConfig(object):
       '/EHsc',
       '/GR-',
       '/TP',
-      '/std:c++17',
     ]
     cxx.linkflags += [
       'kernel32.lib',

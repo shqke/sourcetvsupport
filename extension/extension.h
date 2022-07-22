@@ -1,9 +1,6 @@
 #ifndef _INCLUDE_SOURCETV_SUPPORT_H_
 #define _INCLUDE_SOURCETV_SUPPORT_H_
 
-// something else includes this late and it conflicts with some macro
-#include <algorithm>
-
 // include these before smsdk_ext.h to let use debugging versions of the memory allocators (Windows only)
 // sourcetvsupport/issues/6, sourcetvsupport/issues/14
 #include "sdk/public/tier1/mempool.h"
