@@ -89,7 +89,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: shqke/steamworks-sdk
-          ref: v1.41
+          ref: v1.55
           path: steamworks-sdk
           token: ${{ secrets.STEAMWORKS_REPO_ACCESS_TOKEN }}
           
