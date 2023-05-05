@@ -129,6 +129,7 @@ public:
 	static int vtblindex_GetChallengeType;
 	static int vtblindex_ReplyChallenge;
 	static int vtblindex_FillServerInfo;
+	static int vtblindex_ConnectClient;
 
 	static void* pfn_IsExclusiveToLobbyConnections;
 
@@ -196,6 +197,7 @@ public:
 	static int shookid_ReplyChallenge;
 	static int shookid_FillServerInfo;
 	static int shookid_hltv_FillServerInfo;
+	static int shookid_ConnectClient;
 
 	static void* pfn_AddNewFrame;
 

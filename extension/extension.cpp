@@ -29,6 +29,7 @@ int CBaseServer::vtblindex_GetChallengeNr = 0;
 int CBaseServer::vtblindex_GetChallengeType = 0;
 int CBaseServer::vtblindex_ReplyChallenge = 0;
 int CBaseServer::vtblindex_FillServerInfo = 0;
+int CBaseServer::vtblindex_ConnectClient = 0;
 void* CBaseServer::pfn_IsExclusiveToLobbyConnections = NULL;
 CDetour* CBaseServer::detour_IsExclusiveToLobbyConnections = NULL;
 ICallWrapper* CBaseServer::vcall_GetChallengeNr = NULL;
@@ -40,6 +41,7 @@ int CHLTVServer::vtblindex_FillServerInfo = 0;
 int CHLTVServer::shookid_ReplyChallenge = 0;
 int CHLTVServer::shookid_FillServerInfo = 0;
 int CHLTVServer::shookid_hltv_FillServerInfo = 0;
+int CHLTVServer::shookid_ConnectClient = 0;
 void* CHLTVServer::pfn_AddNewFrame = NULL;
 CDetour* CHLTVServer::detour_AddNewFrame = NULL;
 int CGameServer::shookid_IsPausable = 0;
@@ -78,6 +80,8 @@ SH_DECL_HOOK0(IServer, IsPausable, const, 0, bool);
 SH_DECL_HOOK0_void(ISteamGameServer, LogOff, SH_NOATTRIB, 0);
 #endif
 SH_DECL_HOOK3_void(IServerGameEnts, CheckTransmit, SH_NOATTRIB, 0, CCheckTransmitInfo*, const unsigned short*, int);
+SH_DECL_MANUALHOOK10(CHLTVServer_ConnectClient, 0, 0, 0, IClient*, netadr_t&, int, int, int, const char*,
+	const char*, const char*, int, CUtlVector<NetMessageCvar_t>&, bool);
 
 // Detours
 #include <CDetour/detours.h>
@@ -331,6 +335,7 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 #endif
 #endif
 		{ "CBaseClient::m_SteamID", CBaseClient::offset_m_SteamID },
+		{ "CBaseServer::ConnectClient", CBaseServer::vtblindex_ConnectClient },
 	};
 
 	for (auto&& el : s_offsets) {
@@ -506,6 +511,9 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 	SH_REMOVE_HOOK_ID(CHLTVServer::shookid_FillServerInfo);
 	CHLTVServer::shookid_FillServerInfo = 0;
 
+	SH_REMOVE_HOOK_ID(CHLTVServer::shookid_ConnectClient);
+	CHLTVServer::shookid_ConnectClient = 0;
+
 	SH_REMOVE_HOOK_ID(shookid_CHLTVDemoRecorder_RecordStringTables);
 	shookid_CHLTVDemoRecorder_RecordStringTables = 0;
 
@@ -533,6 +541,7 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 	CHLTVServer::shookid_hltv_FillServerInfo = SH_ADD_MANUALHOOK(CHLTVServer_FillServerInfo, pHLTVServer, SH_MEMBER(this, &SMExtension::Handler_CHLTVServer_FillServerInfo), true);
 #endif
 #endif
+	CHLTVServer::shookid_ConnectClient = SH_ADD_MANUALHOOK(CHLTVServer_ConnectClient, pServer, SH_MEMBER(this, &SMExtension::Handler_CHLTVServer_ConnectClient), false);
 
 	CHLTVDemoRecorder& demoRecorder = pHLTVServer->m_DemoRecorder();
 	shookid_CHLTVDemoRecorder_RecordStringTables = SH_ADD_HOOK(CHLTVDemoRecorder, RecordStringTables, &demoRecorder, SH_MEMBER(this, &SMExtension::Handler_CHLTVDemoRecorder_RecordStringTables), false);
@@ -737,6 +746,26 @@ void SMExtension::Handler_CServerGameEnts_CheckTransmit(CCheckTransmitInfo* pInf
 	}
 }
 
+IClient* SMExtension::Handler_CHLTVServer_ConnectClient(netadr_t& adr, int protocol, int challenge, int authProtocol, const char* name,
+	const char* password, const char* hashedCDkey, int cdKeyLen, CUtlVector<NetMessageCvar_t>& splitScreenClients, bool isClientLowViolence)
+{
+	if (splitScreenClients.Count() > 1)
+	{
+		char buffer[512];
+		bf_write msg(buffer, sizeof(buffer));
+
+		msg.WriteLong(CONNECTIONLESS_HEADER);
+		msg.WriteByte(S2C_CONNREJECT);
+		msg.WriteString("Splitscreen is not allowed in HLTV\n");
+
+		g_pNetSupport->SendPacket(NULL, NS_HLTV, adr, msg.GetData(), msg.GetNumBytesWritten());
+
+		RETURN_META_VALUE(MRES_SUPERCEDE, nullptr);
+	}
+
+	RETURN_META_VALUE(MRES_IGNORED, nullptr);
+}
+
 bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 {
 	sm_sendprop_info_t info;
@@ -766,6 +795,7 @@ bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 	SH_MANUALHOOK_RECONFIGURE(CBaseServer_ReplyChallenge, CBaseServer::vtblindex_ReplyChallenge, 0, 0);
 	SH_MANUALHOOK_RECONFIGURE(CBaseServer_FillServerInfo, CBaseServer::vtblindex_FillServerInfo, 0, 0);
 	SH_MANUALHOOK_RECONFIGURE(CHLTVServer_FillServerInfo, CHLTVServer::vtblindex_FillServerInfo, 0, 0);
+	SH_MANUALHOOK_RECONFIGURE(CHLTVServer_ConnectClient, CBaseServer::vtblindex_ConnectClient, 0, 0);
 
 	// Retrieve addresses from steam_api shared library
 	if (!SetupFromSteamAPILibrary(error, maxlength)) {

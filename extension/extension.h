@@ -44,8 +44,11 @@ enum ESocketIndex_t
 	NS_HLTV,
 };
 
+class IClient;
+
 #define CONNECTIONLESS_HEADER			0xFFFFFFFF	// all OOB packet start with this sequence
 #define S2C_CHALLENGE			'A' // + challenge value
+#define S2C_CONNREJECT			'9'  // Special protocol for rejected connections.
 #define PORT_SERVER			27015	// Default server port, UDP/TCP
 
 class SMExtension :
@@ -74,6 +77,8 @@ public: // SourceHook callbacks
 	bool Handler_CGameServer_IsPausable() const;
 	void Handler_CHLTVServer_FillServerInfo(SVC_ServerInfo& serverinfo);
 	void Handler_CServerGameEnts_CheckTransmit(CCheckTransmitInfo* pInfo, const unsigned short* pEdictIndices, int nEdicts);
+	IClient* Handler_CHLTVServer_ConnectClient(netadr_t& adr, int protocol, int challenge, int authProtocol, const char* name,
+		const char* password, const char* hashedCDkey, int cdKeyLen, CUtlVector<NetMessageCvar_t>& splitScreenClients, bool isClientLowViolence);
 
 public: // SDKExtension
 	/**

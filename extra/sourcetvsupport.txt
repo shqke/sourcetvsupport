@@ -108,6 +108,12 @@
 				"linux"		"58"
 				"windows"	"57"
 			}
+
+			"CBaseServer::ConnectClient"
+			{
+				"linux"		"49"
+				"windows"	"48"
+			}
 		}
 		
 		"Signatures"
@@ -188,6 +194,12 @@
 			{
 				"linux"		"47"
 				"windows"	"46"
+			}
+
+			"CBaseServer::ConnectClient"
+			{
+				"linux"		"51"
+				"windows"	"50"
 			}
 		}
 		

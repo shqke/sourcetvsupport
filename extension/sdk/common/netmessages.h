@@ -56,7 +56,9 @@ protected:
 	bool				m_bReliable;	// true if message should be send reliable
 	INetChannel			*m_NetChannel;	// netchannel this message is from/for
 
+#ifdef SE_LEFT4DEAD2
 	CNetMessageRatelimitPolicy  m_rateLimitPolicy;
+#endif
 };
 
 
@@ -95,6 +97,20 @@ public:	// member vars are public for faster handling
 	char		m_szHostNameBuffer[MAX_OSPATH];
 	char		m_szMissionBuffer[MAX_OSPATH];
 	char		m_szGamemodeBuffer[MAX_OSPATH];
+};
+
+struct NetMessageCvar_t
+{
+	char key[260];
+	char value[260];
+};
+
+class CLC_SplitPlayerConnect : public CNetMessage
+{
+	IClientMessageHandler* m_pMessageHandler;
+
+public:
+	CUtlVector<NetMessageCvar_t> m_vecCvars;
 };
 
 #endif // NETMESSAGES_H
