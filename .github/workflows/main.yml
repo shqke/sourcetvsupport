@@ -56,6 +56,9 @@ jobs:
           - sm_version: "1.11"
             sm_branch: "1.11-dev"
             
+          - os: ubuntu-20.04
+            os_short: oldlinux
+            
           - os: windows-latest
             os_short: win
             
