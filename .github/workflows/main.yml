@@ -15,13 +15,14 @@ on:
 
 jobs:
   build:
-    name: build with sm${{ matrix.sm_version }} on ${{ matrix.os_short }}
+    name: build with sm${{ matrix.sm_version }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os:
           - ubuntu-latest
+          - ubuntu-20.04
           - windows-latest
           
         sm_version:
@@ -35,6 +36,8 @@ jobs:
           # Use MM:Source 1.10 as base version
           - meta_version: "1.10"
             meta_branch: "1.10-dev"
+            
+          - os_short: linux
             
           - sm_version: latest
             sm_branch: master
@@ -52,9 +55,6 @@ jobs:
             
           - sm_version: "1.11"
             sm_branch: "1.11-dev"
-            
-          - os: ubuntu-latest
-            os_short: linux
             
           - os: windows-latest
             os_short: win
