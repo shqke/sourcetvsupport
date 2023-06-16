@@ -34,6 +34,10 @@ extern IPlayerInfoManager* playerinfomanager;
 
 class CDetour;
 
+typedef CBitVec<32> CDWordBitVec; // 32 for l4d2
+
+#define CPlayerBitVec CDWordBitVec
+
 void DataTable_WriteClassInfosBuffer(ServerClass* pClasses, bf_write* pBuf)
 {
 	int count = 0;
@@ -267,7 +271,7 @@ class CBasePlayer :
 public:
 	static int sendprop_m_fFlags;
 
-	IGamePlayer* GetIGamePlayer()
+	inline IGamePlayer* GetIGamePlayer()
 	{
 		return playerhelpers->GetGamePlayer(edict());
 	}
@@ -277,7 +281,7 @@ public:
 		return *(int*)((byte*)(this) + sendprop_m_fFlags);
 	}
 
-	int GetFlags()
+	inline int GetFlags()
 	{
 		return m_fFlags();
 	}
@@ -317,16 +321,44 @@ public:
 	}
 };
 
-CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
+class CSendProxyRecipientsWrapper
 {
-	if (playerIndex > 0 && playerIndex <= playerhelpers->GetMaxClients()) {
-		IGamePlayer* pPlayer = playerhelpers->GetGamePlayer(playerIndex);
-		if (pPlayer != NULL) {
-			return (CBasePlayer*)gameents->EdictToBaseEntity(pPlayer->GetEdict());
-		}
+public:
+	inline void SetRecipient(int iClient)
+	{
+		m_Bits.Set(iClient);
 	}
 
-	return NULL;
+public:
+	CPlayerBitVec m_Bits; // Offset 0
+};
+
+CBasePlayer* UTIL_PlayerByIndex(int iPlayerIndex)
+{
+	if (iPlayerIndex < 1 || iPlayerIndex > playerhelpers->GetMaxClients()) {
+		return NULL;
+	}
+
+	IGamePlayer* pGamePlayer = playerhelpers->GetGamePlayer(iPlayerIndex);
+	if (!pGamePlayer) {
+		return NULL;
+	}
+
+	return (CBasePlayer*)gameents->EdictToBaseEntity(pGamePlayer->GetEdict());
+}
+
+CBasePlayer* UTIL_HLTVPlayerByIndex(int iPlayerIndex)
+{
+	if (iPlayerIndex < 1 || iPlayerIndex > playerhelpers->GetMaxClients()) {
+		return NULL;
+	}
+
+	IGamePlayer* pGamePlayer = playerhelpers->GetGamePlayer(iPlayerIndex);
+	if (!pGamePlayer || !pGamePlayer->IsSourceTV()) {
+		return NULL;
+	}
+
+	return (CBasePlayer*)gameents->EdictToBaseEntity(pGamePlayer->GetEdict());
 }
 
 #endif // _INCLUDE_WRAPPERS_H_

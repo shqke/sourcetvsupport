@@ -43,6 +43,12 @@
 		
 		"Signatures"
 		{
+			"SendProxy_SendLocalDataTable"
+			{
+				"library"	"server"
+				"linux"		"@_Z28SendProxy_SendLocalDataTablePK8SendPropPKvS3_P20CSendProxyRecipientsi"
+			}
+
 			"DataTable_WriteSendTablesBuffer"
 			{
 				"library"	"engine"
@@ -89,6 +95,18 @@
 
 	"left4dead"
 	{
+		"Addresses"
+		{
+			"SendProxy_SendLocalDataTable"
+			{
+				"windows"
+				{
+					"signature"		"SendProxy_SendLocalDataTable"
+					"offset"		"16" // Offset 16 (+ 16 bytes)
+				}
+			}
+		}
+
 		"Offsets"
 		{
 			"CBaseServer::GetChallengeNr"
@@ -118,6 +136,20 @@
 		
 		"Signatures"
 		{
+			"SendProxy_SendLocalDataTable"
+			{
+				"library"	"server"
+				// Can be found by line "terrorlocaldata"
+				// Example: sub_1008F060(&unk_10650448, "terrorlocaldata", 0, &unk_1064C000, sub_1012B780);
+				// sub_1012B780 - the function we want
+				//
+				// It is not possible to create a unique signature in l4d1, 
+				// we use the bytes from the function that is in front, 
+				// we need to make an offset to get the correct address of the function we need.
+				// 89 0A C3 CC CC CC CC CC CC CC CC CC CC CC CC CC 8B 44 24 ?? 8B 4C 24 ?? 83 C0 FF 50 E8 ?? ?? ?? ?? 8B 44 24 ?? C3
+				"windows"	"\x89\x0A\xC3\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\x8B\x44\x24\x2A\x8B\x4C\x24\x2A\x83\xC0\xFF\x50\xE8\x2A\x2A\x2A\x2A\x8B\x44\x24\x2A\xC3"
+			}
+
 			"DataTable_WriteSendTablesBuffer"
 			{
 				"library"	"engine"
@@ -205,6 +237,17 @@
 		
 		"Signatures"
 		{
+			"SendProxy_SendLocalDataTable"
+			{
+				"library"	"server"
+				// Can be found by line "terrorlocaldata"
+				// Example: sub_100A7C30(&unk_108561E8, "terrorlocaldata", 0, &unk_10851480, sub_1016A8C0, 0x80);
+				// sub_1016A8C0 - the function we want
+				//
+				// 55 8B EC 8B 45 ? 8B 4D ? 48 50 E8 ? ? ? ? 8B 45 ? 5D C3 ? ? ? ? ? ? ? ? ? ? ? 55
+				"windows"	"\x55\x8B\xEC\x8B\x45\x2A\x8B\x4D\x2A\x48\x50\xE8\x2A\x2A\x2A\x2A\x8B\x45\x2A\x5D\xC3\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x55"
+			}
+
 			"DataTable_WriteSendTablesBuffer"
 			{
 				"library"	"engine"
