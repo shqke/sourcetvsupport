@@ -2,6 +2,17 @@
 {
 	"#default"
 	{
+		"Addresses"
+		{
+			"SendProxy_SendLocalDataTable"
+			{
+				"linux"
+				{
+					"signature"	"SendProxy_SendLocalDataTable"
+				}
+			}
+		}
+
 		"Offsets"
 		{
 			"CBaseServer::stringTableCRC"
@@ -101,8 +112,8 @@
 			{
 				"windows"
 				{
-					"signature"		"SendProxy_SendLocalDataTable"
-					"offset"		"16" // Offset 16 (+ 16 bytes)
+					"signature"	"SendProxy_SendLocalDataTable"
+					"offset"	"16" // Offset 16 (+ 16 bytes)
 				}
 			}
 		}
@@ -196,6 +207,17 @@
 
 	"left4dead2"
 	{
+		"Addresses"
+		{
+			"SendProxy_SendLocalDataTable"
+			{
+				"windows"
+				{
+					"signature"	"SendProxy_SendLocalDataTable"
+				}
+			}
+		}
+
 		"Offsets"
 		{
 			"CBaseServer::GetChallengeNr"

@@ -324,37 +324,20 @@ public:
 class CSendProxyRecipientsWrapper
 {
 public:
-	inline void SetRecipient(int iClient)
+	inline void SetRecipient(int slotIndex)
 	{
-		m_Bits.Set(iClient);
+		m_Bits.Set(slotIndex);
 	}
 
 public:
 	CPlayerBitVec m_Bits; // Offset 0
 };
 
-CBasePlayer* UTIL_PlayerByIndex(int iPlayerIndex)
+CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 {
-	if (iPlayerIndex < 1 || iPlayerIndex > playerhelpers->GetMaxClients()) {
-		return NULL;
-	}
-
-	IGamePlayer* pGamePlayer = playerhelpers->GetGamePlayer(iPlayerIndex);
+	// SourceMod checks player index in function 'CPlayer *PlayerManager::GetPlayerByIndex(int client) const'
+	IGamePlayer* pGamePlayer = playerhelpers->GetGamePlayer(playerIndex);
 	if (!pGamePlayer) {
-		return NULL;
-	}
-
-	return (CBasePlayer*)gameents->EdictToBaseEntity(pGamePlayer->GetEdict());
-}
-
-CBasePlayer* UTIL_HLTVPlayerByIndex(int iPlayerIndex)
-{
-	if (iPlayerIndex < 1 || iPlayerIndex > playerhelpers->GetMaxClients()) {
-		return NULL;
-	}
-
-	IGamePlayer* pGamePlayer = playerhelpers->GetGamePlayer(iPlayerIndex);
-	if (!pGamePlayer || !pGamePlayer->IsSourceTV()) {
 		return NULL;
 	}
 

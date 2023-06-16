@@ -254,10 +254,9 @@ DETOUR_DECL_STATIC5(Handler_SendProxy_SendLocalDataTable, void*, const SendProp*
 	// We call the original function so as not to add a signature for function 'CSendProxyRecipients::SetOnly'.
 	DETOUR_STATIC_CALL(Handler_SendProxy_SendLocalDataTable)(pProp, pStruct, pVarData, pRecipients, objectID);
 
-	int iSTVSlotIndex = g_pHLTVServer->GetHLTVSlot();
-	CBasePlayer* pPlayer = UTIL_HLTVPlayerByIndex(iSTVSlotIndex + 1);
-	if (pPlayer != NULL) {
-		pRecipients->SetRecipient(iSTVSlotIndex);
+	int hltvSlotIndex = g_pHLTVServer->GetHLTVSlot();
+	if (hltvSlotIndex != 0) {
+		pRecipients->SetRecipient(hltvSlotIndex);
 	}
 
 	return (void*)pVarData;
@@ -384,13 +383,11 @@ void SMExtension::Unload()
 bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlength)
 {
 	// Unable to create unique signature for game left4dead and platform windows
-#if SOURCE_ENGINE == SE_LEFT4DEAD && defined _WIN32
 	if (!gc->GetAddress("SendProxy_SendLocalDataTable", (void**)&pfn_SendProxy_SendLocalDataTable) || !pfn_SendProxy_SendLocalDataTable) {
 		ke::SafeSprintf(error, maxlength, "Failed to get address of function \"SendProxy_SendLocalDataTable\" from game config (file: \"" GAMEDATA_FILE ".txt\")");
 	
 		return false;
 	}
-#endif
 
 	static const struct {
 		const char* key;
@@ -431,9 +428,6 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		{ "CSteam3Server::NotifyClientDisconnect", CSteam3Server::pfn_NotifyClientDisconnect },
 		{ "CHLTVServer::AddNewFrame", CHLTVServer::pfn_AddNewFrame },
 		{ "CFrameSnapshotManager::LevelChanged", CFrameSnapshotManager::pfn_LevelChanged },
-#if SOURCE_ENGINE != SE_LEFT4DEAD || !defined _WIN32
-		{ "SendProxy_SendLocalDataTable", pfn_SendProxy_SendLocalDataTable },
-#endif
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 		{ "CBaseClient::SendFullConnectEvent", CBaseClient::pfn_SendFullConnectEvent },
 #endif
