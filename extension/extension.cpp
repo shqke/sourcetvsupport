@@ -232,7 +232,7 @@ ConVar g_CvarSourceTVSendLocalTables("tv_send_local_data_tables", \
 
 void Cvar_SourceTVSendLocalTables_Changed(IConVar* pVar, const char* pOldValue, float flOldValue)
 {
-	if (!g_pHLTVServer) {
+	if (g_pHLTVServer == NULL) {
 		Msg("IHLTVServer not available, this feature cannot be activated now.""\n");
 
 		return;
@@ -382,11 +382,25 @@ void SMExtension::Unload()
 
 bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlength)
 {
-	// Unable to create unique signature for game left4dead and platform windows
-	if (!gc->GetAddress("SendProxy_SendLocalDataTable", (void**)&pfn_SendProxy_SendLocalDataTable) || !pfn_SendProxy_SendLocalDataTable) {
-		ke::SafeSprintf(error, maxlength, "Failed to get address of function \"SendProxy_SendLocalDataTable\" from game config (file: \"" GAMEDATA_FILE ".txt\")");
-	
-		return false;
+	static const struct {
+		const char* key;
+		void*& address;
+	} s_addresses[] = {
+		{ "SendProxy_SendLocalDataTable", pfn_SendProxy_SendLocalDataTable }, // Unable to create unique signature for game left4dead and platform windows
+	};
+
+	for (auto&& el : s_addresses) {
+		if (!gc->GetAddress(el.key, &el.address)) {
+			ke::SafeSprintf(error, maxlength, "Failed to get address of function \"%s\" from game config (file: \"" GAMEDATA_FILE ".txt\")", el.key);
+
+			return false;
+		}
+
+		if (el.address == NULL) {
+			ke::SafeSprintf(error, maxlength, "Unable to resolve address \"%s\" (game config file: \"" GAMEDATA_FILE ".txt\")", el.key);
+
+			return false;
+		}
 	}
 
 	static const struct {
@@ -835,8 +849,7 @@ void SMExtension::Handler_CServerGameEnts_CheckTransmit(CCheckTransmitInfo* pInf
 IClient* SMExtension::Handler_CHLTVServer_ConnectClient(netadr_t& adr, int protocol, int challenge, int authProtocol, const char* name,
 	const char* password, const char* hashedCDkey, int cdKeyLen, CUtlVector<NetMessageCvar_t>& splitScreenClients, bool isClientLowViolence)
 {
-	if (splitScreenClients.Count() > 1)
-	{
+	if (splitScreenClients.Count() > 1) {
 		char buffer[512];
 		bf_write msg(buffer, sizeof(buffer));
 

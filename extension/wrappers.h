@@ -34,7 +34,7 @@ extern IPlayerInfoManager* playerinfomanager;
 
 class CDetour;
 
-typedef CBitVec<32> CDWordBitVec; // 32 for l4d2
+typedef CBitVec<32> CDWordBitVec; // 32 for l4d2 and l4d1
 
 #define CPlayerBitVec CDWordBitVec
 
