@@ -13,6 +13,7 @@
 // Interfaces
 INetworkStringTableContainer* networkStringTableContainerServer = NULL;
 IHLTVDirector* hltvdirector = NULL;
+IHLTVServer* g_pHLTVServer = NULL;
 INetSupport* g_pNetSupport = NULL;
 IPlayerInfoManager* playerinfomanager = NULL;
 IServerGameEnts* gameents = NULL;
@@ -64,9 +65,13 @@ void* pfn_SteamGameServer_GetHSteamPipe = NULL;
 void* pfn_SteamGameServer_GetHSteamUser = NULL;
 void* pfn_SteamInternal_CreateInterface = NULL;
 void* pfn_SteamInternal_GameServer_Init = NULL;
+void* pfn_SendProxy_SendLocalDataTable = NULL;
 void* pfn_OpenSocketInternal = NULL;
 
 CDetour* detour_SteamInternal_GameServer_Init = NULL;
+CDetour* detour_SendProxy_SendLocalDataTable = NULL;
+
+void Cvar_SourceTVSendLocalTables_Changed(IConVar* pVar, const char* pOldValue, float flOldValue);
 
 // SourceHook
 SH_DECL_HOOK1_void(IHLTVDirector, SetHLTVServer, SH_NOATTRIB, 0, IHLTVServer*);
@@ -201,7 +206,61 @@ DETOUR_DECL_MEMBER0(Handler_CFrameSnapshotManager_LevelChanged, void)
 	// CFrameSnapshotManager::m_PackedEntitiesPool shouldn't have elements to free from now on
 	DETOUR_MEMBER_CALL(Handler_CFrameSnapshotManager_LevelChanged)();
 }
-//
+
+// @A1m`:
+// Similar code is in cs go.
+// This code is probably useless without a fix for the client.
+// Include the SourceTV client in the recipients for local data.
+// Code added to extension 'sourcetvsupport-client' (SourceTV client fixes).
+// When this cvar is disabled 'tv_send_local_tables', netprops from table 'localdata' will also be unavailable on the demo.
+// 
+// Left4Dead and Left4Dead2 game code
+/*void* SendProxy_SendLocalDataTable(const SendProp* pProp, const void* pStruct,
+										const void* pVarData, CSendProxyRecipients* pRecipients, int objectID)
+{
+	pRecipients->SetOnly(objectID - 1);
+
+	return (void*)pVarData;
+}*/
+
+ConVar g_CvarSourceTVSendLocalTables("tv_send_local_data_tables", \
+	"0", \
+	FCVAR_REPLICATED | FCVAR_DEMO, \
+	"Send local data table to SourceTV? Table contains local netprops owned by one player. Useless without 'sourcetvsupport-client'.", \
+	Cvar_SourceTVSendLocalTables_Changed \
+);
+
+void Cvar_SourceTVSendLocalTables_Changed(IConVar* pVar, const char* pOldValue, float flOldValue)
+{
+	if (g_pHLTVServer == NULL) {
+		Msg("IHLTVServer not available, this feature cannot be activated now.""\n");
+
+		return;
+	}
+
+	// Checks for re-enable and re-disable are inside class 'CDetour'
+	if (g_CvarSourceTVSendLocalTables.GetBool()) {
+		detour_SendProxy_SendLocalDataTable->EnableDetour();
+
+		return;
+	}
+
+	detour_SendProxy_SendLocalDataTable->DisableDetour();
+}
+
+DETOUR_DECL_STATIC5(Handler_SendProxy_SendLocalDataTable, void*, const SendProp*, pProp, const void*, pStruct, \
+						const void*, pVarData, CSendProxyRecipientsWrapper*, pRecipients, int, objectID)
+{
+	// We call the original function so as not to add a signature for function 'CSendProxyRecipients::SetOnly'.
+	DETOUR_STATIC_CALL(Handler_SendProxy_SendLocalDataTable)(pProp, pStruct, pVarData, pRecipients, objectID);
+
+	int hltvSlotIndex = g_pHLTVServer->GetHLTVSlot();
+	if (hltvSlotIndex != 0) {
+		pRecipients->SetRecipient(hltvSlotIndex);
+	}
+
+	return (void*)pVarData;
+}
 
 // SMExtension
 void SMExtension::Load()
@@ -241,6 +300,7 @@ void SMExtension::Load()
 	CSteam3Server::detour_NotifyClientDisconnect->EnableDetour();
 	CHLTVServer::detour_AddNewFrame->EnableDetour();
 	CFrameSnapshotManager::detour_LevelChanged->EnableDetour();
+
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 	detour_SteamInternal_GameServer_Init->EnableDetour();
 	CBaseClient::detour_SendFullConnectEvent->EnableDetour();
@@ -249,6 +309,7 @@ void SMExtension::Load()
 #if SOURCE_ENGINE == SE_LEFT4DEAD
 	CGameServer::shookid_IsPausable = SH_ADD_HOOK(IServer, IsPausable, g_pGameIServer, SH_MEMBER(this, &SMExtension::Handler_CGameServer_IsPausable), true);
 #endif
+
 	SH_ADD_HOOK(IHLTVDirector, SetHLTVServer, hltvdirector, SH_MEMBER(this, &SMExtension::Handler_CHLTVDirector_SetHLTVServer), true);
 
 	OnSetHLTVServer(hltvdirector->GetHLTVServer());
@@ -295,6 +356,11 @@ void SMExtension::Unload()
 		detour_SteamInternal_GameServer_Init = NULL;
 	}
 
+	if (detour_SendProxy_SendLocalDataTable != NULL) {
+		detour_SendProxy_SendLocalDataTable->Destroy();
+		detour_SendProxy_SendLocalDataTable = NULL;
+	}
+
 	if (CSteam3Server::detour_NotifyClientDisconnect != NULL) {
 		CSteam3Server::detour_NotifyClientDisconnect->Destroy();
 		CSteam3Server::detour_NotifyClientDisconnect = NULL;
@@ -316,6 +382,27 @@ void SMExtension::Unload()
 
 bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlength)
 {
+	static const struct {
+		const char* key;
+		void*& address;
+	} s_addresses[] = {
+		{ "SendProxy_SendLocalDataTable", pfn_SendProxy_SendLocalDataTable }, // Unable to create unique signature for game left4dead and platform windows
+	};
+
+	for (auto&& el : s_addresses) {
+		if (!gc->GetAddress(el.key, &el.address)) {
+			ke::SafeSprintf(error, maxlength, "Failed to get address of function \"%s\" from game config (file: \"" GAMEDATA_FILE ".txt\")", el.key);
+
+			return false;
+		}
+
+		if (el.address == NULL) {
+			ke::SafeSprintf(error, maxlength, "Unable to resolve address \"%s\" (game config file: \"" GAMEDATA_FILE ".txt\")", el.key);
+
+			return false;
+		}
+	}
+
 	static const struct {
 		const char* key;
 		int& offset;
@@ -437,6 +524,13 @@ bool SMExtension::CreateDetours(char* error, size_t maxlength)
 		return false;
 	}
 #endif
+
+	detour_SendProxy_SendLocalDataTable = DETOUR_CREATE_STATIC(Handler_SendProxy_SendLocalDataTable, pfn_SendProxy_SendLocalDataTable);
+	if (detour_SendProxy_SendLocalDataTable == NULL) {
+		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"SendProxy_SendLocalDataTable\"");
+
+		return false;
+	}
 
 	CBaseServer::detour_IsExclusiveToLobbyConnections = DETOUR_CREATE_MEMBER(Handler_CBaseServer_IsExclusiveToLobbyConnections, CBaseServer::pfn_IsExclusiveToLobbyConnections);
 	if (CBaseServer::detour_IsExclusiveToLobbyConnections == NULL) {
@@ -568,6 +662,12 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 	// client doesn't allow stringTableCRC to be empty
 	// CHLTVServer instance must copy property stringTableCRC from CGameServer instance
 	pServer->stringTableCRC() = CBaseServer::FromIServer(g_pGameIServer)->stringTableCRC();
+
+	g_pHLTVServer = pIHLTVServer;
+
+	if (g_CvarSourceTVSendLocalTables.GetBool()) {
+		detour_SendProxy_SendLocalDataTable->EnableDetour();
+	}
 }
 
 void SMExtension::Handler_CHLTVDirector_SetHLTVServer(IHLTVServer* pIHLTVServer)
@@ -749,8 +849,7 @@ void SMExtension::Handler_CServerGameEnts_CheckTransmit(CCheckTransmitInfo* pInf
 IClient* SMExtension::Handler_CHLTVServer_ConnectClient(netadr_t& adr, int protocol, int challenge, int authProtocol, const char* name,
 	const char* password, const char* hashedCDkey, int cdKeyLen, CUtlVector<NetMessageCvar_t>& splitScreenClients, bool isClientLowViolence)
 {
-	if (splitScreenClients.Count() > 1)
-	{
+	if (splitScreenClients.Count() > 1) {
 		char buffer[512];
 		bf_write msg(buffer, sizeof(buffer));
 
@@ -809,12 +908,16 @@ bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 	sharesys->AddDependency(myself, "bintools.ext", true, true);
 	sharesys->AddDependency(myself, "sdktools.ext", true, true);
 
+	ConVar_Register(0, this);
+
 	return true;
 }
 
 void SMExtension::SDK_OnUnload()
 {
 	Unload();
+
+	ConVar_Unregister();
 }
 
 void SMExtension::SDK_OnAllLoaded()
@@ -833,6 +936,7 @@ bool SMExtension::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, b
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pNetSupport, INetSupport, INETSUPPORT_VERSION_STRING);
 
 	GET_V_IFACE_CURRENT(GetServerFactory, hltvdirector, IHLTVDirector, INTERFACEVERSION_HLTVDIRECTOR);
+
 	GET_V_IFACE_CURRENT(GetServerFactory, playerinfomanager, IPlayerInfoManager, INTERFACEVERSION_PLAYERINFOMANAGER);
 	GET_V_IFACE_CURRENT(GetServerFactory, gameents, IServerGameEnts, INTERFACEVERSION_SERVERGAMEENTS);
 
@@ -871,4 +975,10 @@ bool SMExtension::QueryRunning(char* error, size_t maxlength)
 	SM_CHECK_IFACE(BINTOOLS, bintools);
 
 	return true;
+}
+
+bool SMExtension::RegisterConCommandBase(ConCommandBase* pVar)
+{
+	// Notify metamod of ownership
+	return META_REGCVAR(pVar);
 }

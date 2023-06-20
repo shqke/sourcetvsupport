@@ -52,7 +52,8 @@ class IClient;
 #define PORT_SERVER			27015	// Default server port, UDP/TCP
 
 class SMExtension :
-	public SDKExtension
+	public SDKExtension,
+	public IConCommandBaseAccessor
 {
 public:
 	void Load();
@@ -149,6 +150,9 @@ public: // IExtensionInterface
 	 * @return					True on success, false otherwise.
 	 */
 	bool QueryRunning(char* error, size_t maxlength) override;
+
+public: // IConCommandBaseAccessor
+	bool RegisterConCommandBase(ConCommandBase* pVar) override;
 };
 
 #endif // _INCLUDE_SOURCETV_SUPPORT_H_
