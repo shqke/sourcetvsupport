@@ -6,10 +6,13 @@
 #include "sdk/public/tier1/mempool.h"
 #include "sdk/engine/packed_entity.h"
 
+// Fix up mathlib-algorithm conflicts
+#undef clamp
+
 #include <smsdk_ext.h>
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 
 //#define TV_RELAYTEST
 

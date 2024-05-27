@@ -155,7 +155,7 @@ class ExtensionConfig(object):
     if builder.options.sm_path:
       self.sm_root = builder.options.sm_path
     else:
-      self.sm_root = ResolveEnvPath('SOURCEMOD110', 'sourcemod-1.10')
+      self.sm_root = ResolveEnvPath('SOURCEMOD112', 'sourcemod-1.12')
       if not self.sm_root:
         self.sm_root = ResolveEnvPath('SOURCEMOD', 'sourcemod')
       if not self.sm_root:
@@ -168,7 +168,7 @@ class ExtensionConfig(object):
     if builder.options.mms_path:
       self.mms_root = builder.options.mms_path
     else:
-      self.mms_root = ResolveEnvPath('MMSOURCE110', 'mmsource-1.10')
+      self.mms_root = ResolveEnvPath('MMSOURCE112', 'mmsource-1.12')
       if not self.mms_root:
         self.mms_root = ResolveEnvPath('MMSOURCE_DEV', 'metamod-source')
       if not self.mms_root:
@@ -196,14 +196,14 @@ class ExtensionConfig(object):
 
   def configure_cxx(self, cxx):
     if cxx.family == 'msvc':
-      if cxx.version < 1900:
-        raise Exception('Only MSVC 2015 and later are supported, c++14 support is required.')
-    if cxx.family == 'gcc':
-      if cxx.version < 'gcc-4.9':
-        raise Exception('Only GCC versions 4.9 or greater are supported, c++14 support is required.')
-    if cxx.family == 'clang':
-      if cxx.version < 'clang-3.4':
-        raise Exception('Only clang versions 3.4 or greater are supported, c++14 support is required.')
+      if cxx.version < 1914 and builder.options.generator != 'vs':
+        raise Exception(f'Only MSVC 2017 15.7 and later are supported, full C++17 support is required. ({str(cxx.version)} < 1914)')
+    elif cxx.family == 'gcc':
+      if cxx.version < 'gcc-9':
+        raise Exception('Only GCC versions 9 or later are supported, full C++17 support is required.')
+    elif cxx.family == 'clang':
+      if cxx.version < 'clang-5':
+        raise Exception('Only clang versions 5 or later are supported, full C++17 support is required.')
 
     if cxx.like('gcc'):
       self.configure_gcc(cxx)
@@ -238,7 +238,6 @@ class ExtensionConfig(object):
       '_snprintf=snprintf',
       '_vsnprintf=vsnprintf',
       'HAVE_STDINT_H',
-      'HAVE_STRING_H',
       'GNUC',
     ]
     cxx.cflags += [
@@ -249,19 +248,17 @@ class ExtensionConfig(object):
       '-Wno-unused',
       '-Wno-switch',
       '-Wno-array-bounds',
-      '-msse',
       '-fvisibility=hidden',
     ]
-
-    if cxx.version == 'apple-clang-6.0' or cxx.version == 'clang-3.4':
-      cxx.cxxflags += ['-std=c++1y']
-    else:
-      cxx.cxxflags += ['-std=c++14']
+    if cxx.target.arch in ['x86', 'x86_64']:
+      cxx.cflags += ['-msse']
 
     cxx.cxxflags += [
+      '-std=c++17',
       '-fno-threadsafe-statics',
       '-Wno-non-virtual-dtor',
       '-Wno-overloaded-virtual',
+      '-Wno-register',
       '-fvisibility-inlines-hidden',
     ]
 
@@ -292,7 +289,7 @@ class ExtensionConfig(object):
       cxx.cflags += ['-Wno-sometimes-uninitialized']
 
     # Work around SDK warnings.
-    if cxx.version >= 'clang-10.0':
+    if cxx.version >= 'clang-10.0' or cxx.version >= 'apple-clang-12.0':
         cxx.cflags += [
             '-Wno-implicit-int-float-conversion',
             '-Wno-tautological-overlap-compare',
@@ -327,6 +324,7 @@ class ExtensionConfig(object):
       '/EHsc',
       '/GR-',
       '/TP',
+      '/std:c++17',
     ]
     cxx.linkflags += [
       'kernel32.lib',
@@ -361,7 +359,6 @@ class ExtensionConfig(object):
       cxx.linkflags += ['-static-libgcc']
     elif cxx.family == 'clang':
       cxx.linkflags += ['-lgcc_eh']
-    cxx.linkflags += ['-static-libstdc++']
 
   def configure_mac(self, cxx):
     cxx.defines += ['OSX', '_OSX', 'POSIX', 'KE_ABSOLUTELY_NO_STL']
@@ -569,6 +566,35 @@ class ExtensionConfig(object):
       compiler.linkflags[0:0] = [library]
 
     return binary
+
+  def AddCDetour(self, binary):
+    sm_public_path = os.path.join(self.sm_root, 'public')
+    
+    if os.path.exists(os.path.join(sm_public_path, 'safetyhook', 'safetyhook.cpp')):
+      binary.sources += [
+        os.path.join(sm_public_path, 'CDetour', 'detours.cpp'),
+        os.path.join(sm_public_path, 'safetyhook', 'safetyhook.cpp'),
+        os.path.join(sm_public_path, 'safetyhook', 'Zydis.c')
+      ]
+      binary.compiler.cxxincludes += [ os.path.join(sm_public_path, 'safetyhook') ]
+      binary.compiler.includes += [ os.path.join(sm_public_path, 'safetyhook') ]
+    else:
+      binary.sources += [
+        os.path.join(sm_public_path, 'CDetour', 'detours.cpp'),
+        os.path.join(sm_public_path, 'asm', 'asm.c'),
+      ]
+      # sm1.10+
+      libudis_folder = os.path.join(sm_public_path, 'libudis86')
+      if os.path.isdir(libudis_folder):
+        binary.compiler.defines += ['HAVE_STRING_H']
+        binary.sources += [
+          os.path.join(libudis_folder, 'decode.c'),
+          os.path.join(libudis_folder, 'itab.c'),
+          os.path.join(libudis_folder, 'syn-att.c'),
+          os.path.join(libudis_folder, 'syn-intel.c'),
+          os.path.join(libudis_folder, 'syn.c'),
+          os.path.join(libudis_folder, 'udis86.c'),
+        ]
 
   def HL2Library(self, context, compiler, name, sdk):
     binary = self.Library(context, compiler, name)
