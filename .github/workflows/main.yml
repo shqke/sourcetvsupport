@@ -78,7 +78,7 @@ jobs:
           echo "CXX=clang++" >> $GITHUB_ENV
           
       - name: Getting SourceMod ${{ matrix.sm_version }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: alliedmodders/sourcemod
           ref: ${{ matrix.sm_branch }}
@@ -86,14 +86,14 @@ jobs:
           submodules: recursive
           
       - name: Getting MM:Source ${{ matrix.meta_version }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: alliedmodders/metamod-source
           ref: ${{ matrix.meta_branch }}
           path: metamod-${{ matrix.meta_version }}
           
       - name: Getting SteamWorks SDK
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: shqke/steamworks-sdk
           ref: v1.55
@@ -101,7 +101,7 @@ jobs:
           token: ${{ secrets.STEAMWORKS_REPO_ACCESS_TOKEN }}
           
       - name: Setting up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.8
         
@@ -111,21 +111,21 @@ jobs:
           pip install git+https://github.com/alliedmodders/ambuild
           
       - name: Getting hl2sdk-l4d2
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: alliedmodders/hl2sdk
           ref: l4d2
           path: hl2sdk-l4d2
           
       - name: Getting hl2sdk-l4d
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: alliedmodders/hl2sdk
           ref: l4d
           path: hl2sdk-l4d
           
       - name: Getting own repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: src
           
@@ -144,7 +144,7 @@ jobs:
           ambuild
           
       - name: Uploading package
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sourcetvsupport-sm${{ matrix.sm_version }}-${{ matrix.os_short }}-${{ env.GITHUB_SHA_SHORT }}
           path: src/build/package
