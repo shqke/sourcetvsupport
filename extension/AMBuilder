@@ -1,5 +1,5 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
-import os
+import os.path
 
 project = builder.LibraryProject('sourcetvsupport')
 project.sources += [
@@ -13,8 +13,8 @@ for sdk_name in Extension.sdks:
   for cxx in builder.targets:
     if not cxx.target.arch in sdk.platformSpec[cxx.target.platform]:
       continue
-    
+
     binary = Extension.HL2ExtConfig(project, builder, cxx, 'sourcetvsupport.ext.' + sdk.ext, sdk)
     Extension.AddCDetour(binary)
 
-Extension.extensions += builder.Add(project)
+Extension.extensions = builder.Add(project)

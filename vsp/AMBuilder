@@ -1,5 +1,5 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
-import os
+import os.path
 
 project = builder.LibraryProject('vsp')
 project.sources += [

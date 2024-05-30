@@ -30,19 +30,16 @@ jobs:
           - "1.9"
           - "1.10"
           - "1.11"
-          - "latest"
           
         include:
           # Use MM:Source 1.10 as base version
           - meta_version: "1.10"
             meta_branch: "1.10-dev"
             
-          - os_short: linux
-            
-          - sm_version: latest
-            sm_branch: master
-            meta_version: latest
+          - meta_version: latest
             meta_branch: master
+            
+          - os_short: linux
             
           - sm_version: "1.8"
             sm_branch: "1.8-dev"
