@@ -215,18 +215,6 @@
 				"linux"		"51"
 				"windows"	"50"
 			}
-
-			"CBasePlayer::m_bSplitScreenPlayer"
-			{
-				"linux"		"9033"
-				"windows"	"9037"
-			}
-
-			"CBasePlayer::m_hSplitOwner"
-			{
-				"linux"		"9036"
-				"windows"	"9040"
-			}
 		}
 		
 		"Signatures"

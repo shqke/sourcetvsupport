@@ -18,12 +18,6 @@
 
 extern IServerGameEnts* gameents;
 extern IPlayerInfoManager* playerinfomanager;
-extern CBaseEntityList* g_pEntityList;
-extern IServerGameEnts* gameents;
-extern CGlobalVars* gpGlobals;
-
-inline CBaseEntity* GetContainingEntity(edict_t* pent);
-inline edict_t* INDEXENT(int iEdictNum);
 
 // ref: https://partner.steamgames.com/downloads/list
 // Left 4 Dead - sdk v1.06
@@ -265,48 +259,9 @@ class CBaseEntity :
 	public IServerEntity
 {
 public:
-	static int sendprop_m_iTeamNum;
-	static int sendprop_pl;
-
-public:
 	edict_t* edict()
 	{
 		return gameents->BaseEntityToEdict(this);
-	}
-
-	const char* GetClassname()
-	{
-		return gamehelpers->GetEntityClassname(this);
-	}
-
-	inline static CBaseEntity* Instance(edict_t* pent)
-	{
-		if (!pent) {
-			pent = INDEXENT(0);
-		}
-
-		return GetContainingEntity(pent);
-	}
-
-	inline int GetTeamNumber()
-	{
-		return *(int*)((byte*)this + sendprop_m_iTeamNum);
-	}
-
-	inline bool IsHLTV()
-	{
-		CPlayerState& pl = *(CPlayerState*)((byte*)this + sendprop_pl);
-		return pl.hltv;
-	}
-
-	inline edict_t* edict2()
-	{
-		IServerNetworkable* pNet = ((IServerUnknown*)this)->GetNetworkable();
-		if (!pNet) {
-			return NULL;
-		}
-
-		return pNet->GetEdict();
 	}
 };
 
@@ -314,8 +269,6 @@ class CBasePlayer :
 	public CBaseEntity
 {
 public:
-	static int offset_m_bSplitScreenPlayer;
-	static int offset_m_hSplitOwner;
 	static int sendprop_m_fFlags;
 
 public:
@@ -367,77 +320,33 @@ public:
 
 		pPlayerInfo->ChangeTeam(teamIndex);
 	}
-
-#if SOURCE_ENGINE == SE_LEFT4DEAD2
-	CBasePlayer* GetSplitScreenPlayerOwner()
-	{
-		// CHandle< CBasePlayer > CBasePlayer::m_hSplitOwner;
-		CHandle<CBasePlayer>& m_hSplitOwner = *reinterpret_cast<CHandle<CBasePlayer>*>(reinterpret_cast<byte*>(this) + offset_m_hSplitOwner);
-		return m_hSplitOwner.Get();
-	}
-
-	bool IsSplitScreenPlayer() const
-	{
-		// bool CBasePlayer::m_bSplitScreenPlayer;
-		return *(bool*)((byte*)this + offset_m_bSplitScreenPlayer);
-	}
-
-	bool IsSplitScreenUserOnEdict(edict_t* edict)
-	{
-		if (!IsSplitScreenPlayer()) {
-			return false;
-		}
-
-		CBaseEntity* pCont = GetContainingEntity(edict);
-		return (pCont && (pCont == GetSplitScreenPlayerOwner()));
-	}
-#endif
 };
 
 class CBaseAbility
 {
 public:
-	static int offset_m_owner;
-
-public:
-	int ShouldTransmit(const CCheckTransmitInfo* pInfo)
+	int ShouldTransmit_Post(const CCheckTransmitInfo* pInfo, int iReturn)
 	{
-		CBasePlayer* pOwner = GetOwner();
-		if (!pOwner) {
-			return FL_EDICT_DONTSEND;
+		if (iReturn == FL_EDICT_ALWAYS) {
+			return iReturn;
 		}
 
-		if (pOwner->edict2() == pInfo->m_pClientEnt) {
-			return FL_EDICT_ALWAYS;
+		IGamePlayer* pPlayer = playerhelpers->GetGamePlayer(pInfo->m_pClientEnt);
+		if (pPlayer == NULL) {
+			return iReturn;
 		}
 
-#if SOURCE_ENGINE == SE_LEFT4DEAD2
-		if (pOwner->IsSplitScreenUserOnEdict(pInfo->m_pClientEnt)) {
-			return FL_EDICT_ALWAYS;
-		}
-#endif
-
-		CBaseEntity* pEntity = CBaseEntity::Instance(pInfo->m_pClientEnt);
-		if (!pEntity) {
-			return FL_EDICT_DONTSEND;
+		IPlayerInfo* pPInfo = pPlayer->GetPlayerInfo();
+		if (pPInfo == NULL) {
+			return iReturn;
 		}
 
 		/* We send to spectators and SourceTV */
-		if (pEntity->IsHLTV() || pEntity->GetTeamNumber() == TEAM_SPECTATOR) {
+		if (pPlayer->IsSourceTV() || pPInfo->GetTeamIndex() == TEAM_SPECTATOR) {
 			return FL_EDICT_ALWAYS;
 		}
 
-		if (pEntity->GetTeamNumber() == pOwner->GetTeamNumber()) {
-			return FL_EDICT_ALWAYS;
-		}
-
-		return FL_EDICT_DONTSEND;
-	}
-
-	inline CBasePlayer* GetOwner()
-	{
-		CHandle<CBasePlayer>& m_hOwner = *reinterpret_cast<CHandle<CBasePlayer>*>(reinterpret_cast<byte*>(this) + offset_m_owner);
-		return m_hOwner.Get();
+		return iReturn;
 	}
 };
 
@@ -451,32 +360,6 @@ CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 	}
 
 	return NULL;
-}
-
-inline CBaseEntity* GetContainingEntity(edict_t* pent)
-{
-	IServerUnknown* pServUnknown = pent->GetUnknown();
-	if (pent == NULL || pServUnknown == NULL) {
-		return NULL;
-	}
-
-	return pServUnknown->GetBaseEntity();
-}
-
-inline edict_t* INDEXENT(int iEdictNum)
-{
-	//assert(iEdictNum >= 0 && iEdictNum < MAX_EDICTS);
-
-	if (gpGlobals->pEdicts == NULL) {
-		return NULL;
-	}
-
-	edict_t* pEdict = gpGlobals->pEdicts + iEdictNum;
-	if (pEdict->IsFree()) {
-		return NULL;
-	}
-
-	return pEdict;
 }
 
 #endif // _INCLUDE_WRAPPERS_H_

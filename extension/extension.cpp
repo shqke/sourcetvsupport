@@ -23,8 +23,6 @@ CGlobalVars* gpGlobals = NULL;
 
 IServer* g_pGameIServer = NULL;
 
-CBaseEntityList* g_pEntityList = NULL;
-
 int CBasePlayer::sendprop_m_fFlags = 0;
 int CBaseServer::offset_stringTableCRC = 0;
 int CBaseServer::vtblindex_GetChallengeNr = 0;
@@ -55,14 +53,6 @@ CDetour* CSteam3Server::detour_NotifyClientDisconnect = NULL;
 int CFrameSnapshotManager::offset_m_PackedEntitiesPool = 0;
 void* CFrameSnapshotManager::pfn_LevelChanged = NULL;
 CDetour* CFrameSnapshotManager::detour_LevelChanged = NULL;
-
-int CBaseAbility::offset_m_owner = 0;
-
-int CBaseEntity::sendprop_m_iTeamNum = 0;
-int CBaseEntity::sendprop_pl = 0;
-
-int CBasePlayer::offset_m_bSplitScreenPlayer = 0;
-int CBasePlayer::offset_m_hSplitOwner = 0;
 
 int shookid_CHLTVDemoRecorder_RecordStringTables = 0;
 int shookid_CHLTVDemoRecorder_RecordServerClasses = 0;
@@ -117,8 +107,9 @@ SMEXT_LINK(&g_Extension);
 // This is also relevant for spectators.
 DETOUR_DECL_MEMBER1(Handler_CBaseAbility__ShouldTransmit, int, const CCheckTransmitInfo*, pInfo)
 {
-	return ((CBaseAbility*)this)->ShouldTransmit(pInfo);
-	//return DETOUR_MEMBER_CALL(Handler_CBaseAbility__ShouldTransmit)(pInfo); // skip game function
+	int iReturn = DETOUR_MEMBER_CALL(Handler_CBaseAbility__ShouldTransmit)(pInfo);
+
+	return ((CBaseAbility*)this)->ShouldTransmit_Post(pInfo, iReturn);
 }
 
 // bug#X: hltv clients are sending "player_full_connect" event
@@ -355,8 +346,6 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		{ "CBaseServer::ReplyChallenge", CBaseServer::vtblindex_ReplyChallenge },
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 		{ "CBaseServer::FillServerInfo", CBaseServer::vtblindex_FillServerInfo },
-		{ "CBasePlayer::m_bSplitScreenPlayer", CBasePlayer::offset_m_bSplitScreenPlayer },
-		{ "CBasePlayer::m_hSplitOwner", CBasePlayer::offset_m_hSplitOwner },
 	#if !defined _WIN32
 		{ "CHLTVServer::FillServerInfo", CHLTVServer::vtblindex_FillServerInfo },
 	#endif
@@ -810,36 +799,6 @@ bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 	}
 
 	CBasePlayer::sendprop_m_fFlags = info.actual_offset;
-	
-	if (!gamehelpers->FindSendPropInfo("CBaseEntity", "m_iTeamNum", &info)) {
-		ke::SafeStrcpy(error, maxlength, "Unable to find SendProp \"CBaseEntity::m_iTeamNum\"");
-
-		return false;
-	}
-
-	CBaseEntity::sendprop_m_iTeamNum = info.actual_offset;
-
-	if (!gamehelpers->FindSendPropInfo("CBaseAbility", "m_owner", &info)) {
-		ke::SafeStrcpy(error, maxlength, "Unable to find SendProp \"CBaseAbility::m_owner\"");
-
-		return false;
-	}
-
-	CBaseAbility::offset_m_owner = info.actual_offset;
-
-	if (!gamehelpers->FindSendPropInfo("CBasePlayer", "pl", &info)) {
-		ke::SafeStrcpy(error, maxlength, "Unable to find SendProp \"CBasePlayer::pl\"");
-
-		return false;
-	}
-
-	CBasePlayer::sendprop_pl = info.actual_offset;
-
-	g_pEntityList = (CBaseEntityList*)gamehelpers->GetGlobalEntityList();
-	if (g_pEntityList == NULL) {
-		ke::SafeStrcpy(error, maxlength, "Could not get pointer to class 'CBaseEntityList'");
-		return false;
-	}
 
 	IGameConfig* gc = NULL;
 	if (!gameconfs->LoadGameConfigFile(GAMEDATA_FILE, &gc, error, maxlength)) {
