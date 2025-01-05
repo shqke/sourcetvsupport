@@ -267,7 +267,6 @@ class CBasePlayer :
 public:
 	static int sendprop_m_fFlags;
 
-public:
 	IGamePlayer* GetIGamePlayer()
 	{
 		return playerhelpers->GetGamePlayer(edict());
