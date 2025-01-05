@@ -56,6 +56,14 @@ int CFrameSnapshotManager::offset_m_PackedEntitiesPool = 0;
 void* CFrameSnapshotManager::pfn_LevelChanged = NULL;
 CDetour* CFrameSnapshotManager::detour_LevelChanged = NULL;
 
+int CBaseAbility::offset_m_owner = 0;
+
+int CBaseEntity::sendprop_m_iTeamNum = 0;
+int CBaseEntity::sendprop_pl = 0;
+
+int CBasePlayer::offset_m_bSplitScreenPlayer = 0;
+int CBasePlayer::offset_m_hSplitOwner = 0;
+
 int shookid_CHLTVDemoRecorder_RecordStringTables = 0;
 int shookid_CHLTVDemoRecorder_RecordServerClasses = 0;
 int shookid_SteamGameServer_LogOff = 0;
@@ -278,7 +286,7 @@ void SMExtension::Load()
 void SMExtension::Unload()
 {
 	if (g_pDetour_ShouldTransmit) {
-		g_pDetour_ShouldTransmit->DisableDetour();
+		g_pDetour_ShouldTransmit->Destroy();
 		g_pDetour_ShouldTransmit = NULL;
 	}
 
@@ -347,8 +355,8 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		{ "CBaseServer::ReplyChallenge", CBaseServer::vtblindex_ReplyChallenge },
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 		{ "CBaseServer::FillServerInfo", CBaseServer::vtblindex_FillServerInfo },
-		{ "CBasePlayer::m_bSplitScreenPlayer", CBasePlayer::m_iSplitScreenPlayerOffset },
-		{ "CBasePlayer::m_hSplitOwner", CBasePlayer::m_iSplitOwnerOffset },
+		{ "CBasePlayer::m_bSplitScreenPlayer", CBasePlayer::offset_m_bSplitScreenPlayer },
+		{ "CBasePlayer::m_hSplitOwner", CBasePlayer::offset_m_hSplitOwner },
 	#if !defined _WIN32
 		{ "CHLTVServer::FillServerInfo", CHLTVServer::vtblindex_FillServerInfo },
 	#endif
@@ -487,7 +495,7 @@ bool SMExtension::CreateDetours(char* error, size_t maxlength)
 
 	g_pDetour_ShouldTransmit = DETOUR_CREATE_MEMBER(Handler_CBaseAbility__ShouldTransmit, "CBaseAbility::ShouldTransmit");
 	if (!g_pDetour_ShouldTransmit) {
-		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for 'CBaseViewModel::ShouldTransmit'");
+		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for 'CBaseAbility::ShouldTransmit'");
 
 		return false;
 	}
@@ -804,32 +812,33 @@ bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 	CBasePlayer::sendprop_m_fFlags = info.actual_offset;
 	
 	if (!gamehelpers->FindSendPropInfo("CBaseEntity", "m_iTeamNum", &info)) {
-		snprintf(error, maxlength, "Unable to find SendProp \"CBaseEntity::m_iTeamNum\"");
+		ke::SafeStrcpy(error, maxlength, "Unable to find SendProp \"CBaseEntity::m_iTeamNum\"");
 
 		return false;
 	}
 
-	CBaseEntity::m_iTeamNumOffset = info.actual_offset;
+	CBaseEntity::sendprop_m_iTeamNum = info.actual_offset;
 
 	if (!gamehelpers->FindSendPropInfo("CBaseAbility", "m_owner", &info)) {
-		snprintf(error, maxlength, "Unable to find SendProp \"CBaseAbility::m_owner\"");
+		ke::SafeStrcpy(error, maxlength, "Unable to find SendProp \"CBaseAbility::m_owner\"");
 
 		return false;
 	}
 
-	CBaseAbility::m_iOwnerOffset = info.actual_offset;
+	CBaseAbility::offset_m_owner = info.actual_offset;
 
 	if (!gamehelpers->FindSendPropInfo("CBasePlayer", "pl", &info)) {
-		snprintf(error, maxlength, "Unable to find SendProp \"CBasePlayer::pl\"");
+		ke::SafeStrcpy(error, maxlength, "Unable to find SendProp \"CBasePlayer::pl\"");
 
 		return false;
 	}
 
-	CBasePlayer::m_iPlOffset = info.actual_offset;
+	CBasePlayer::sendprop_pl = info.actual_offset;
 
 	g_pEntityList = (CBaseEntityList*)gamehelpers->GetGlobalEntityList();
 	if (g_pEntityList == NULL) {
-		snprintf(error, maxlength, "Could not get pointer to class 'CBaseEntityList'");
+		ke::SafeStrcpy(error, maxlength, "Could not get pointer to class 'CBaseEntityList'");
+		return false;
 	}
 
 	IGameConfig* gc = NULL;

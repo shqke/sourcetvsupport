@@ -265,8 +265,8 @@ class CBaseEntity :
 	public IServerEntity
 {
 public:
-	static inline uint16_t m_iTeamNumOffset;
-	static inline uint16_t m_iPlOffset;
+	static int sendprop_m_iTeamNum;
+	static int sendprop_pl;
 
 public:
 	edict_t* edict()
@@ -290,12 +290,12 @@ public:
 
 	inline int GetTeamNumber()
 	{
-		return *(int*)((byte*)this + m_iTeamNumOffset);
+		return *(int*)((byte*)this + sendprop_m_iTeamNum);
 	}
 
 	inline bool IsHLTV()
 	{
-		CPlayerState& pl = *(CPlayerState*)((byte*)this + m_iPlOffset);
+		CPlayerState& pl = *(CPlayerState*)((byte*)this + sendprop_pl);
 		return pl.hltv;
 	}
 
@@ -314,8 +314,8 @@ class CBasePlayer :
 	public CBaseEntity
 {
 public:
-	static inline int m_iSplitScreenPlayerOffset;
-	static inline int m_iSplitOwnerOffset;
+	static int offset_m_bSplitScreenPlayer;
+	static int offset_m_hSplitOwner;
 	static int sendprop_m_fFlags;
 
 public:
@@ -372,14 +372,14 @@ public:
 	CBasePlayer* GetSplitScreenPlayerOwner()
 	{
 		// CHandle< CBasePlayer > CBasePlayer::m_hSplitOwner;
-		CHandle<CBasePlayer>& m_hSplitOwner = *reinterpret_cast<CHandle<CBasePlayer>*>(reinterpret_cast<byte*>(this) + m_iSplitOwnerOffset);
+		CHandle<CBasePlayer>& m_hSplitOwner = *reinterpret_cast<CHandle<CBasePlayer>*>(reinterpret_cast<byte*>(this) + offset_m_hSplitOwner);
 		return m_hSplitOwner.Get();
 	}
 
 	bool IsSplitScreenPlayer() const
 	{
 		// bool CBasePlayer::m_bSplitScreenPlayer;
-		return *(bool*)((byte*)this + m_iSplitScreenPlayerOffset);
+		return *(bool*)((byte*)this + offset_m_bSplitScreenPlayer);
 	}
 
 	bool IsSplitScreenUserOnEdict(edict_t* edict)
@@ -397,7 +397,7 @@ public:
 class CBaseAbility
 {
 public:
-	static inline int m_iOwnerOffset;
+	static int offset_m_owner;
 
 public:
 	int ShouldTransmit(const CCheckTransmitInfo* pInfo)
@@ -436,7 +436,7 @@ public:
 
 	inline CBasePlayer* GetOwner()
 	{
-		CHandle<CBasePlayer>& m_hOwner = *reinterpret_cast<CHandle<CBasePlayer>*>(reinterpret_cast<byte*>(this) + m_iOwnerOffset);
+		CHandle<CBasePlayer>& m_hOwner = *reinterpret_cast<CHandle<CBasePlayer>*>(reinterpret_cast<byte*>(this) + offset_m_owner);
 		return m_hOwner.Get();
 	}
 };
