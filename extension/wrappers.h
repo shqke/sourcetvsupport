@@ -11,8 +11,6 @@
 #include <iclient.h>
 #include <igameevents.h>
 #include <networkstringtabledefs.h>
-#include <ehandle.h>
-#include <PlayerState.h>
 
 #define TEAM_SPECTATOR 1
 
