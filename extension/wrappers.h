@@ -12,8 +12,6 @@
 #include <igameevents.h>
 #include <networkstringtabledefs.h>
 
-#define TEAM_SPECTATOR 1
-
 extern IServerGameEnts* gameents;
 extern IPlayerInfoManager* playerinfomanager;
 
