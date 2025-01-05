@@ -11,9 +11,19 @@
 #include <iclient.h>
 #include <igameevents.h>
 #include <networkstringtabledefs.h>
+#include <ehandle.h>
+#include <PlayerState.h>
+
+#define TEAM_SPECTATOR 1
 
 extern IServerGameEnts* gameents;
 extern IPlayerInfoManager* playerinfomanager;
+extern CBaseEntityList* g_pEntityList;
+extern IServerGameEnts* gameents;
+extern CGlobalVars* gpGlobals;
+
+inline CBaseEntity* GetContainingEntity(edict_t* pent);
+inline edict_t* INDEXENT(int iEdictNum);
 
 // ref: https://partner.steamgames.com/downloads/list
 // Left 4 Dead - sdk v1.06
@@ -255,9 +265,48 @@ class CBaseEntity :
 	public IServerEntity
 {
 public:
+	static inline uint16_t m_iTeamNumOffset;
+	static inline uint16_t m_iPlOffset;
+
+public:
 	edict_t* edict()
 	{
 		return gameents->BaseEntityToEdict(this);
+	}
+
+	const char* GetClassname()
+	{
+		return gamehelpers->GetEntityClassname(this);
+	}
+
+	inline static CBaseEntity* Instance(edict_t* pent)
+	{
+		if (!pent) {
+			pent = INDEXENT(0);
+		}
+
+		return GetContainingEntity(pent);
+	}
+
+	inline int GetTeamNumber()
+	{
+		return *(int*)((byte*)this + m_iTeamNumOffset);
+	}
+
+	inline bool IsHLTV()
+	{
+		CPlayerState& pl = *(CPlayerState*)((byte*)this + m_iPlOffset);
+		return pl.hltv;
+	}
+
+	inline edict_t* edict2()
+	{
+		IServerNetworkable* pNet = ((IServerUnknown*)this)->GetNetworkable();
+		if (!pNet) {
+			return NULL;
+		}
+
+		return pNet->GetEdict();
 	}
 };
 
@@ -265,8 +314,11 @@ class CBasePlayer :
 	public CBaseEntity
 {
 public:
+	static inline int m_iSplitScreenPlayerOffset;
+	static inline int m_iSplitOwnerOffset;
 	static int sendprop_m_fFlags;
 
+public:
 	IGamePlayer* GetIGamePlayer()
 	{
 		return playerhelpers->GetGamePlayer(edict());
@@ -315,6 +367,78 @@ public:
 
 		pPlayerInfo->ChangeTeam(teamIndex);
 	}
+
+#if SOURCE_ENGINE == SE_LEFT4DEAD2
+	CBasePlayer* GetSplitScreenPlayerOwner()
+	{
+		// CHandle< CBasePlayer > CBasePlayer::m_hSplitOwner;
+		CHandle<CBasePlayer>& m_hSplitOwner = *reinterpret_cast<CHandle<CBasePlayer>*>(reinterpret_cast<byte*>(this) + m_iSplitOwnerOffset);
+		return m_hSplitOwner.Get();
+	}
+
+	bool IsSplitScreenPlayer() const
+	{
+		// bool CBasePlayer::m_bSplitScreenPlayer;
+		return *(bool*)((byte*)this + m_iSplitScreenPlayerOffset);
+	}
+
+	bool IsSplitScreenUserOnEdict(edict_t* edict)
+	{
+		if (!IsSplitScreenPlayer()) {
+			return false;
+		}
+
+		CBaseEntity* pCont = GetContainingEntity(edict);
+		return (pCont && (pCont == GetSplitScreenPlayerOwner()));
+	}
+#endif
+};
+
+class CBaseAbility
+{
+public:
+	static inline int m_iOwnerOffset;
+
+public:
+	int ShouldTransmit(const CCheckTransmitInfo* pInfo)
+	{
+		CBasePlayer* pOwner = GetOwner();
+		if (!pOwner) {
+			return FL_EDICT_DONTSEND;
+		}
+
+		if (pOwner->edict2() == pInfo->m_pClientEnt) {
+			return FL_EDICT_ALWAYS;
+		}
+
+#if SOURCE_ENGINE == SE_LEFT4DEAD2
+		if (pOwner->IsSplitScreenUserOnEdict(pInfo->m_pClientEnt)) {
+			return FL_EDICT_ALWAYS;
+		}
+#endif
+
+		CBaseEntity* pEntity = CBaseEntity::Instance(pInfo->m_pClientEnt);
+		if (!pEntity) {
+			return FL_EDICT_DONTSEND;
+		}
+
+		/* We send to spectators and SourceTV */
+		if (pEntity->IsHLTV() || pEntity->GetTeamNumber() == TEAM_SPECTATOR) {
+			return FL_EDICT_ALWAYS;
+		}
+
+		if (pEntity->GetTeamNumber() == pOwner->GetTeamNumber()) {
+			return FL_EDICT_ALWAYS;
+		}
+
+		return FL_EDICT_DONTSEND;
+	}
+
+	inline CBasePlayer* GetOwner()
+	{
+		CHandle<CBasePlayer>& m_hOwner = *reinterpret_cast<CHandle<CBasePlayer>*>(reinterpret_cast<byte*>(this) + m_iOwnerOffset);
+		return m_hOwner.Get();
+	}
 };
 
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
@@ -327,6 +451,32 @@ CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 	}
 
 	return NULL;
+}
+
+inline CBaseEntity* GetContainingEntity(edict_t* pent)
+{
+	IServerUnknown* pServUnknown = pent->GetUnknown();
+	if (pent == NULL || pServUnknown == NULL) {
+		return NULL;
+	}
+
+	return pServUnknown->GetBaseEntity();
+}
+
+inline edict_t* INDEXENT(int iEdictNum)
+{
+	//assert(iEdictNum >= 0 && iEdictNum < MAX_EDICTS);
+
+	if (gpGlobals->pEdicts == NULL) {
+		return NULL;
+	}
+
+	edict_t* pEdict = gpGlobals->pEdicts + iEdictNum;
+	if (pEdict->IsFree()) {
+		return NULL;
+	}
+
+	return pEdict;
 }
 
 #endif // _INCLUDE_WRAPPERS_H_

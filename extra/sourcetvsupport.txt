@@ -84,6 +84,12 @@
 				"library"	"engine"
 				"linux"		"@_ZN11CBaseClient20SendFullConnectEventEv"
 			}
+
+			"CBaseAbility::ShouldTransmit"
+			{
+				"library"	"server"
+				"linux"		"@_ZN12CBaseAbility14ShouldTransmitEPK18CCheckTransmitInfo"
+			}
 		}
 	}
 
@@ -159,6 +165,14 @@
 				// 56 8B F1 8D 4E 58
 				"windows"	"\x56\x8B\xF1\x8D\x4E\x58"
 			}
+
+			"CBaseAbility::ShouldTransmit"
+			{
+				"library"	"server"
+				// 57 8B F9 8B 87 74 03 00 00 83 F8 FF 74 ? 8B 15 ? ? ? ? 8B C8 81 E1 FF 0F 00 00 C1 E1 04 8D 4C 11 04 85 C9 74 ? C1 E8 0C 39 41 04 75 ? 83 39 00 
+				// Seventeenth (17) method of virtual table for "CBaseAbility"
+				"linux"		"\x57\x8B\xF9\x8B\x87\x74\x03\x00\x00\x83\xF8\xFF\x74\x2A\x8B\x15\x2A\x2A\x2A\x2A\x8B\xC8\x81\xE1\xFF\x0F\x00\x00\xC1\xE1\x04\x8D\x4C\x11\x04\x85\xC9\x74\x2A\xC1\xE8\x0C\x39\x41\x04\x75\x2A\x83\x39\x00"
+			}
 		}
 	}
 
@@ -200,6 +214,18 @@
 			{
 				"linux"		"51"
 				"windows"	"50"
+			}
+
+			"CBasePlayer::m_bSplitScreenPlayer"
+			{
+				"linux"		"9033"
+				"windows"	"9037"
+			}
+
+			"CBasePlayer::m_hSplitOwner"
+			{
+				"linux"		"9036"
+				"windows"	"9040"
 			}
 		}
 		
@@ -253,6 +279,14 @@
 				// xref to string "player_connect_full"
 				// 56 57 8B F9 8B 0D ? ? ? ? 8B 01 8B 50 18
 				"windows"	"\x56\x57\x8B\xF9\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x01\x8B\x50\x18"
+			}
+
+			"CBaseAbility::ShouldTransmit"
+			{
+				"library"	"server"
+				// 55 8B EC 53 8B D9 8B 8B 38 04 00 00 
+				// Twentieth (20) method of virtual table for "CBaseAbility"
+				"linux"		"\x55\x8B\xEC\x53\x8B\xD9\x8B\x8B\x38\x04\x00\x00"
 			}
 		}
 	}

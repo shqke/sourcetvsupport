@@ -23,6 +23,8 @@ CGlobalVars* gpGlobals = NULL;
 
 IServer* g_pGameIServer = NULL;
 
+CBaseEntityList* g_pEntityList = NULL;
+
 int CBasePlayer::sendprop_m_fFlags = 0;
 int CBaseServer::offset_stringTableCRC = 0;
 int CBaseServer::vtblindex_GetChallengeNr = 0;
@@ -67,6 +69,7 @@ void* pfn_SteamInternal_GameServer_Init = NULL;
 void* pfn_OpenSocketInternal = NULL;
 
 CDetour* detour_SteamInternal_GameServer_Init = NULL;
+CDetour* g_pDetour_ShouldTransmit = NULL;
 
 // SourceHook
 SH_DECL_HOOK1_void(IHLTVDirector, SetHLTVServer, SH_NOATTRIB, 0, IHLTVServer*);
@@ -101,6 +104,14 @@ bool CUtlStreamBuffer::IsOpen() const
 
 SMExtension g_Extension;
 SMEXT_LINK(&g_Extension);
+
+// Bug: infected players abilities are not sent, so the cooldown of abilities in versus-like modes is not visible in the HUD below. 
+// This is also relevant for spectators.
+DETOUR_DECL_MEMBER1(Handler_CBaseAbility__ShouldTransmit, int, const CCheckTransmitInfo*, pInfo)
+{
+	return ((CBaseAbility*)this)->ShouldTransmit(pInfo);
+	//return DETOUR_MEMBER_CALL(Handler_CBaseAbility__ShouldTransmit)(pInfo); // skip game function
+}
 
 // bug#X: hltv clients are sending "player_full_connect" event
 // user ids of hltv clients can collide with user ids of sv
@@ -237,6 +248,7 @@ void SMExtension::Load()
 		return;
 	}
 
+	g_pDetour_ShouldTransmit->EnableDetour();
 	CBaseServer::detour_IsExclusiveToLobbyConnections->EnableDetour();
 	CSteam3Server::detour_NotifyClientDisconnect->EnableDetour();
 	CHLTVServer::detour_AddNewFrame->EnableDetour();
@@ -265,6 +277,11 @@ void SMExtension::Load()
 
 void SMExtension::Unload()
 {
+	if (g_pDetour_ShouldTransmit) {
+		g_pDetour_ShouldTransmit->DisableDetour();
+		g_pDetour_ShouldTransmit = NULL;
+	}
+
 	if (CBaseServer::vcall_GetChallengeNr != NULL) {
 		CBaseServer::vcall_GetChallengeNr->Destroy();
 		CBaseServer::vcall_GetChallengeNr = NULL;
@@ -330,9 +347,11 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		{ "CBaseServer::ReplyChallenge", CBaseServer::vtblindex_ReplyChallenge },
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 		{ "CBaseServer::FillServerInfo", CBaseServer::vtblindex_FillServerInfo },
-#if !defined _WIN32
+		{ "CBasePlayer::m_bSplitScreenPlayer", CBasePlayer::m_iSplitScreenPlayerOffset },
+		{ "CBasePlayer::m_hSplitOwner", CBasePlayer::m_iSplitOwnerOffset },
+	#if !defined _WIN32
 		{ "CHLTVServer::FillServerInfo", CHLTVServer::vtblindex_FillServerInfo },
-#endif
+	#endif
 #endif
 		{ "CBaseClient::m_SteamID", CBaseClient::offset_m_SteamID },
 		{ "CBaseServer::ConnectClient", CBaseServer::vtblindex_ConnectClient },
@@ -462,6 +481,13 @@ bool SMExtension::CreateDetours(char* error, size_t maxlength)
 	CFrameSnapshotManager::detour_LevelChanged = DETOUR_CREATE_MEMBER(Handler_CFrameSnapshotManager_LevelChanged, CFrameSnapshotManager::pfn_LevelChanged);
 	if (CFrameSnapshotManager::detour_LevelChanged == NULL) {
 		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"CFrameSnapshotManager::LevelChanged\"");
+
+		return false;
+	}
+
+	g_pDetour_ShouldTransmit = DETOUR_CREATE_MEMBER(Handler_CBaseAbility__ShouldTransmit, "CBaseAbility::ShouldTransmit");
+	if (!g_pDetour_ShouldTransmit) {
+		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for 'CBaseViewModel::ShouldTransmit'");
 
 		return false;
 	}
@@ -776,6 +802,35 @@ bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 	}
 
 	CBasePlayer::sendprop_m_fFlags = info.actual_offset;
+	
+	if (!gamehelpers->FindSendPropInfo("CBaseEntity", "m_iTeamNum", &info)) {
+		snprintf(error, maxlength, "Unable to find SendProp \"CBaseEntity::m_iTeamNum\"");
+
+		return false;
+	}
+
+	CBaseEntity::m_iTeamNumOffset = info.actual_offset;
+
+	if (!gamehelpers->FindSendPropInfo("CBaseAbility", "m_owner", &info)) {
+		snprintf(error, maxlength, "Unable to find SendProp \"CBaseAbility::m_owner\"");
+
+		return false;
+	}
+
+	CBaseAbility::m_iOwnerOffset = info.actual_offset;
+
+	if (!gamehelpers->FindSendPropInfo("CBasePlayer", "pl", &info)) {
+		snprintf(error, maxlength, "Unable to find SendProp \"CBasePlayer::pl\"");
+
+		return false;
+	}
+
+	CBasePlayer::m_iPlOffset = info.actual_offset;
+
+	g_pEntityList = (CBaseEntityList*)gamehelpers->GetGlobalEntityList();
+	if (g_pEntityList == NULL) {
+		snprintf(error, maxlength, "Could not get pointer to class 'CBaseEntityList'");
+	}
 
 	IGameConfig* gc = NULL;
 	if (!gameconfs->LoadGameConfigFile(GAMEDATA_FILE, &gc, error, maxlength)) {
