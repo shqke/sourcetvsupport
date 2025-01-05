@@ -318,34 +318,6 @@ public:
 	}
 };
 
-class CBaseAbility
-{
-public:
-	int ShouldTransmit_Post(const CCheckTransmitInfo* pInfo, int iReturn)
-	{
-		if (iReturn == FL_EDICT_ALWAYS) {
-			return iReturn;
-		}
-
-		IGamePlayer* pPlayer = playerhelpers->GetGamePlayer(pInfo->m_pClientEnt);
-		if (pPlayer == NULL) {
-			return iReturn;
-		}
-
-		IPlayerInfo* pPInfo = pPlayer->GetPlayerInfo();
-		if (pPInfo == NULL) {
-			return iReturn;
-		}
-
-		/* We send to spectators and SourceTV */
-		if (pPlayer->IsSourceTV() || pPInfo->GetTeamIndex() == TEAM_SPECTATOR) {
-			return FL_EDICT_ALWAYS;
-		}
-
-		return iReturn;
-	}
-};
-
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 {
 	if (playerIndex > 0 && playerIndex <= playerhelpers->GetMaxClients()) {

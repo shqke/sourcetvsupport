@@ -109,7 +109,26 @@ DETOUR_DECL_MEMBER1(Handler_CBaseAbility__ShouldTransmit, int, const CCheckTrans
 {
 	int iReturn = DETOUR_MEMBER_CALL(Handler_CBaseAbility__ShouldTransmit)(pInfo);
 
-	return ((CBaseAbility*)this)->ShouldTransmit_Post(pInfo, iReturn);
+	if (iReturn == FL_EDICT_ALWAYS) {
+		return iReturn;
+	}
+
+	IGamePlayer* pPlayer = playerhelpers->GetGamePlayer(pInfo->m_pClientEnt);
+	if (pPlayer == NULL) {
+		return iReturn;
+	}
+
+	IPlayerInfo* pPInfo = pPlayer->GetPlayerInfo();
+	if (pPInfo == NULL) {
+		return iReturn;
+	}
+
+	/* We send to spectators and SourceTV */
+	if (pPlayer->IsSourceTV() || pPInfo->GetTeamIndex() == TEAM_SPECTATOR) {
+		return FL_EDICT_ALWAYS;
+	}
+
+	return iReturn;
 }
 
 // bug#X: hltv clients are sending "player_full_connect" event
