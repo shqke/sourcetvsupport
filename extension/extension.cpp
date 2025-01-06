@@ -53,6 +53,8 @@ CDetour* CSteam3Server::detour_NotifyClientDisconnect = NULL;
 int CFrameSnapshotManager::offset_m_PackedEntitiesPool = 0;
 void* CFrameSnapshotManager::pfn_LevelChanged = NULL;
 CDetour* CFrameSnapshotManager::detour_LevelChanged = NULL;
+void* CBaseAbility::pfn_ShouldTransmit = NULL;
+CDetour* CBaseAbility::detour_ShouldTransmit = NULL;
 
 int shookid_CHLTVDemoRecorder_RecordStringTables = 0;
 int shookid_CHLTVDemoRecorder_RecordServerClasses = 0;
@@ -67,7 +69,6 @@ void* pfn_SteamInternal_GameServer_Init = NULL;
 void* pfn_OpenSocketInternal = NULL;
 
 CDetour* detour_SteamInternal_GameServer_Init = NULL;
-CDetour* g_pDetour_ShouldTransmit = NULL;
 
 // SourceHook
 SH_DECL_HOOK1_void(IHLTVDirector, SetHLTVServer, SH_NOATTRIB, 0, IHLTVServer*);
@@ -266,7 +267,7 @@ void SMExtension::Load()
 		return;
 	}
 
-	g_pDetour_ShouldTransmit->EnableDetour();
+	CBaseAbility::detour_ShouldTransmit->EnableDetour();
 	CBaseServer::detour_IsExclusiveToLobbyConnections->EnableDetour();
 	CSteam3Server::detour_NotifyClientDisconnect->EnableDetour();
 	CHLTVServer::detour_AddNewFrame->EnableDetour();
@@ -295,9 +296,9 @@ void SMExtension::Load()
 
 void SMExtension::Unload()
 {
-	if (g_pDetour_ShouldTransmit) {
-		g_pDetour_ShouldTransmit->Destroy();
-		g_pDetour_ShouldTransmit = NULL;
+	if (CBaseAbility::detour_ShouldTransmit) {
+		CBaseAbility::detour_ShouldTransmit->Destroy();
+		CBaseAbility::detour_ShouldTransmit = NULL;
 	}
 
 	if (CBaseServer::vcall_GetChallengeNr != NULL) {
@@ -393,6 +394,7 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 		{ "CBaseClient::SendFullConnectEvent", CBaseClient::pfn_SendFullConnectEvent },
 #endif
+		{ "CBaseAbility::ShouldTransmit", CBaseAbility::pfn_ShouldTransmit },
 #ifdef TV_RELAYTEST
 		{ "OpenSocketInternal", pfn_OpenSocketInternal },
 #endif
@@ -501,9 +503,9 @@ bool SMExtension::CreateDetours(char* error, size_t maxlength)
 		return false;
 	}
 
-	g_pDetour_ShouldTransmit = DETOUR_CREATE_MEMBER(Handler_CBaseAbility__ShouldTransmit, "CBaseAbility::ShouldTransmit");
-	if (!g_pDetour_ShouldTransmit) {
-		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for 'CBaseAbility::ShouldTransmit'");
+	CBaseAbility::detour_ShouldTransmit = DETOUR_CREATE_MEMBER(Handler_CBaseAbility__ShouldTransmit, CBaseAbility::pfn_ShouldTransmit);
+	if (CBaseAbility::detour_ShouldTransmit == NULL) {
+		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"CBaseAbility::ShouldTransmit\"");
 
 		return false;
 	}
