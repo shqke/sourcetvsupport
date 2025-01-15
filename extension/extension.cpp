@@ -459,23 +459,30 @@ bool SMExtension::SetupFromSteamAPILibrary(char* error, int maxlength)
 	return true;
 }
 
-/**
- * From extension sourcescramble: https://github.com/nosoop/SMExt-SourceScramble
- * Converts a byte string representation (in either signature or space-delimited hex format) to
- * a vector of bytes.
- */
-std::vector<uint8_t> ByteVectorFromString(const char* s) {
-	// TODO better parsing
+std::vector<uint8_t> ByteVectorFromString(const char* s)
+{
 	std::vector<uint8_t> payload;
+	std::string str(s);
 
-	char* s1 = strdup(s);
-	char* p = strtok(s1, "\\x ");
-	while (p) {
-		uint8_t byte = strtol(p, nullptr, 16);
-		payload.push_back(byte);
-		p = strtok(nullptr, "\\x ");
+	for (size_t i = 0; i < str.length(); ++i) {
+		if (str[i] == '\\' && i + 1 < str.length() && str[i + 1] == 'x') {
+			if (i + 3 < str.length() && std::isxdigit(str[i + 2]) && std::isxdigit(str[i + 3])) {
+				std::string byteString = str.substr(i + 2, 2);
+				char* endPtr;
+				long byteValue = strtol(byteString.c_str(), &endPtr, 16);
+
+				if (endPtr != byteString.c_str() && *endPtr == '\0' && byteValue >= 0 && byteValue <= 255) {
+					payload.push_back(static_cast<uint8_t>(byteValue));
+				} else {
+					smutils->LogError(myself, "Warning: Invalid byte string '\\x%s' ignored.", byteString.c_str());
+				}
+				i += 3;
+			} else {
+				smutils->LogError(myself, "Warning: Incomplete byte sequence '\\x' ignored.");
+				i++;
+			}
+		}
 	}
-	free(s1);
 
 	return payload;
 }
@@ -939,13 +946,13 @@ bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 		return false;
 	}
 
-	if (!CreatePatches(gc, error, maxlength)) {
+	if (!SetupFromGameConfig(gc, error, maxlength)) {
 		gameconfs->CloseGameConfigFile(gc);
 
 		return false;
 	}
 
-	if (!SetupFromGameConfig(gc, error, maxlength)) {
+	if (!CreatePatches(gc, error, maxlength)) {
 		gameconfs->CloseGameConfigFile(gc);
 
 		return false;
