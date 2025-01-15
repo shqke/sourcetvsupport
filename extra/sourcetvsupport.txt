@@ -101,6 +101,15 @@
 
 	"left4dead"
 	{
+		"Keys"
+		{
+			"ForEachTerrorPlayer<HitAnnouncement>::check_bytes::linux"		"\x74"
+			"ForEachTerrorPlayer<HitAnnouncement>::patch_bytes::linux"		"\xEB"
+
+			"ForEachTerrorPlayer<HitAnnouncement>::check_bytes::windows"	"\x0F\x85"
+			"ForEachTerrorPlayer<HitAnnouncement>::patch_bytes::windows"	"\x90\x90\x90\x90\x90\x90"
+		}
+
 		"Offsets"
 		{
 			"CBaseServer::GetChallengeNr"
@@ -198,6 +207,15 @@
 
 	"left4dead2"
 	{
+		"Keys"
+		{
+			"ForEachTerrorPlayer<HitAnnouncement>::check_bytes::linux"		"\x74"
+			"ForEachTerrorPlayer<HitAnnouncement>::patch_bytes::linux"		"\xEB"
+
+			"ForEachTerrorPlayer<HitAnnouncement>::check_bytes::windows"	"\x0F\x85"
+			"ForEachTerrorPlayer<HitAnnouncement>::patch_bytes::windows"	"\x90\x90\x90\x90\x90\x90"
+		}
+
 		"Offsets"
 		{
 			"CBaseServer::GetChallengeNr"

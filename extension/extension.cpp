@@ -459,30 +459,57 @@ bool SMExtension::SetupFromSteamAPILibrary(char* error, int maxlength)
 	return true;
 }
 
-bool SMExtension::CreatePatches(char* error, size_t maxlength)
+/**
+ * From extension sourcescramble: https://github.com/nosoop/SMExt-SourceScramble
+ * Converts a byte string representation (in either signature or space-delimited hex format) to
+ * a vector of bytes.
+ */
+std::vector<uint8_t> ByteVectorFromString(const char* s) {
+	// TODO better parsing
+	std::vector<uint8_t> payload;
+
+	char* s1 = strdup(s);
+	char* p = strtok(s1, "\\x ");
+	while (p) {
+		uint8_t byte = strtol(p, nullptr, 16);
+		payload.push_back(byte);
+		p = strtok(nullptr, "\\x ");
+	}
+	free(s1);
+
+	return payload;
+}
+
+bool SMExtension::CreatePatches(IGameConfig* gc, char* error, size_t maxlength)
 {
+	static const struct {
+		const char* keyBytes;
+		patch_t& patch_info;
+	} s_patches[] = {
+	#if !defined _WIN32
+		{ "ForEachTerrorPlayer<HitAnnouncement>::check_bytes::linux", g_patchPzDmg.m_checkBytes },
+		{ "ForEachTerrorPlayer<HitAnnouncement>::patch_bytes::linux", g_patchPzDmg.m_patchBytes },
+	#else
+		{ "ForEachTerrorPlayer<HitAnnouncement>::check_bytes::windows", g_patchPzDmg.m_checkBytes },
+		{ "ForEachTerrorPlayer<HitAnnouncement>::patch_bytes::windows", g_patchPzDmg.m_patchBytes },
+	#endif
+	};
+
+	for (auto&& el : s_patches) {
+		const char* keyValue = gc->GetKeyValue(el.keyBytes);
+		if (keyValue == NULL) {
+			ke::SafeSprintf(error, maxlength, "Unable to find patch section for \"%s\" from game config (file: \"" GAMEDATA_FILE ".txt\")", el.keyBytes);
+
+			return false;
+		}
+
+		std::vector<uint8_t> vecBytes = ByteVectorFromString(keyValue);
+		std::copy(vecBytes.begin(), vecBytes.end(), el.patch_info.patch);
+		el.patch_info.bytes = vecBytes.size();
+	}
+
 	// Bug: Usermessage 'PZDmgMsg' is not sent to SourceTV, remove 'IsBot' check.
 	// Function ForEachTerrorPlayer<HitAnnouncement>.
-
-#if defined _WIN32
-	// l4d1 and l4d2 (server.dll) (windows)
-	g_patchPzDmg.m_checkBytes.patch[0] = 0x0F; // jz instruction
-	g_patchPzDmg.m_checkBytes.patch[1] = 0x85; // jz instruction
-
-	g_patchPzDmg.m_patchBytes.patch[0] = 0x90; // 6 bytes nop
-	g_patchPzDmg.m_patchBytes.patch[1] = 0x90; // 6 bytes nop
-	g_patchPzDmg.m_patchBytes.patch[2] = 0x90; // 6 bytes nop
-	g_patchPzDmg.m_patchBytes.patch[3] = 0x90; // 6 bytes nop
-	g_patchPzDmg.m_patchBytes.patch[4] = 0x90; // 6 bytes nop
-	g_patchPzDmg.m_patchBytes.patch[5] = 0x90; // 6 bytes nop
-#else
-	g_patchPzDmg.m_checkBytes.patch[0] = 0x74; // jz instruction
-
-	g_patchPzDmg.m_patchBytes.patch[0] = 0xEB; // jmp instruction
-#endif
-
-	g_patchPzDmg.m_checkBytes.bytes = strlen((char*)g_patchPzDmg.m_checkBytes.patch);
-	g_patchPzDmg.m_patchBytes.bytes = strlen((char*)g_patchPzDmg.m_patchBytes.patch);
 
 	for (size_t i = 0; i < sizeof(g_patchPzDmg.m_checkBytes.patch) && i < g_patchPzDmg.m_checkBytes.bytes; i++) {
 		byte cCheckByte = *(reinterpret_cast<byte*>((uintptr_t)g_patchPzDmg.m_pForEachTerrorPlayer_HitAnnouncement + g_patchPzDmg.m_iPatchOffset + i));
@@ -912,7 +939,7 @@ bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 		return false;
 	}
 
-	if (!CreatePatches(error, maxlength)) {
+	if (!CreatePatches(gc, error, maxlength)) {
 		return false;
 	}
 
