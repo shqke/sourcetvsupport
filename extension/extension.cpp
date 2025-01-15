@@ -23,7 +23,7 @@ CGlobalVars* gpGlobals = NULL;
 
 IServer* g_pGameIServer = NULL;
 
-CPzMsgDamagePatch g_patchPzDmg;
+CPatch g_patchPzDmg;
 
 int CBasePlayer::sendprop_m_fFlags = 0;
 int CBaseServer::offset_stringTableCRC = 0;
@@ -395,7 +395,7 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		{ "CSteam3Server::NotifyClientDisconnect", CSteam3Server::pfn_NotifyClientDisconnect },
 		{ "CHLTVServer::AddNewFrame", CHLTVServer::pfn_AddNewFrame },
 		{ "CFrameSnapshotManager::LevelChanged", CFrameSnapshotManager::pfn_LevelChanged },
-		{ "ForEachTerrorPlayer<HitAnnouncement>", g_patchPzDmg.m_pForEachTerrorPlayer_HitAnnouncement },
+		{ "ForEachTerrorPlayer<HitAnnouncement>", g_patchPzDmg.m_pSignature },
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 		{ "CBaseClient::SendFullConnectEvent", CBaseClient::pfn_SendFullConnectEvent },
 #endif
@@ -482,10 +482,11 @@ std::vector<uint8_t> ByteVectorFromString(const char* s) {
 
 bool SMExtension::CreatePatches(IGameConfig* gc, char* error, size_t maxlength)
 {
+	// Load patch&check bytes
 	static const struct {
 		const char* keyBytes;
 		patch_t& patch_info;
-	} s_patches[] = {
+	} s_patchesBytes[] = {
 	#if !defined _WIN32
 		{ "ForEachTerrorPlayer<HitAnnouncement>::check_bytes::linux", g_patchPzDmg.m_checkBytes },
 		{ "ForEachTerrorPlayer<HitAnnouncement>::patch_bytes::linux", g_patchPzDmg.m_patchBytes },
@@ -495,7 +496,7 @@ bool SMExtension::CreatePatches(IGameConfig* gc, char* error, size_t maxlength)
 	#endif
 	};
 
-	for (auto&& el : s_patches) {
+	for (auto&& el : s_patchesBytes) {
 		const char* keyValue = gc->GetKeyValue(el.keyBytes);
 		if (keyValue == NULL) {
 			ke::SafeSprintf(error, maxlength, "Unable to find patch section for \"%s\" from game config (file: \"" GAMEDATA_FILE ".txt\")", el.keyBytes);
@@ -508,38 +509,53 @@ bool SMExtension::CreatePatches(IGameConfig* gc, char* error, size_t maxlength)
 		el.patch_info.bytes = vecBytes.size();
 	}
 
-	// Bug: Usermessage 'PZDmgMsg' is not sent to SourceTV, remove 'IsBot' check.
-	// Function ForEachTerrorPlayer<HitAnnouncement>.
+	// Check patches and enable
+	static const struct {
+		CPatch& patch_info;
+	} s_patches[] = {
+		{ g_patchPzDmg },
+	};
 
-	for (size_t i = 0; i < sizeof(g_patchPzDmg.m_checkBytes.patch) && i < g_patchPzDmg.m_checkBytes.bytes; i++) {
-		byte cCheckByte = *(reinterpret_cast<byte*>((uintptr_t)g_patchPzDmg.m_pForEachTerrorPlayer_HitAnnouncement + g_patchPzDmg.m_iPatchOffset + i));
+	for (auto&& el : s_patches) {
+		for (size_t i = 0; i < sizeof(el.patch_info.m_checkBytes.patch) && i < el.patch_info.m_checkBytes.bytes; i++) {
+			byte cCheckByte = *(reinterpret_cast<byte*>((uintptr_t)el.patch_info.m_pSignature + el.patch_info.m_iPatchOffset + i));
 
-		if (cCheckByte == g_patchPzDmg.m_checkBytes.patch[i]) {
-			Msg("[Success] Offset '%d' for patch 'PZDmgMsg', patch size: %d. Byte '%x' expected, received byte '%x'.""\n", \
-				g_patchPzDmg.m_iPatchOffset, g_patchPzDmg.m_checkBytes.bytes, g_patchPzDmg.m_checkBytes.patch[i], cCheckByte);
-			continue;
+			if (cCheckByte == el.patch_info.m_checkBytes.patch[i]) {
+				Msg("[Success] Offset '%d' for patch 'PZDmgMsg', patch size: %d. Byte '%x' expected, received byte '%x'.""\n", \
+					el.patch_info.m_iPatchOffset, el.patch_info.m_checkBytes.bytes, el.patch_info.m_checkBytes.patch[i], cCheckByte);
+				continue;
+			}
+
+			Msg("[Error] Wrong offset '%d' for patch 'PZDmgMsg', patch size: %d. Byte '%x' expected, received byte '%x'. Please contact the author!""\n", \
+				el.patch_info.m_iPatchOffset, el.patch_info.m_checkBytes.bytes, el.patch_info.m_checkBytes.patch[i], cCheckByte);
+
+			return false;
 		}
 
-		Msg("[Error] Wrong offset '%d' for patch 'PZDmgMsg', patch size: %d. Byte '%x' expected, received byte '%x'. Please contact the author!""\n", \
-			g_patchPzDmg.m_iPatchOffset, g_patchPzDmg.m_checkBytes.bytes, g_patchPzDmg.m_checkBytes.patch[i], cCheckByte);
-
-		return false;
+		ApplyPatch(el.patch_info.m_pSignature, el.patch_info.m_iPatchOffset, &el.patch_info.m_patchBytes, &el.patch_info.m_originalBytes);
+		ProtectMemory(el.patch_info.m_pSignature, el.patch_info.m_patchBytes.bytes, PAGE_EXECUTE_READ);
+		el.patch_info.m_bPatchEnable = true;
 	}
-
-	ApplyPatch(g_patchPzDmg.m_pForEachTerrorPlayer_HitAnnouncement, g_patchPzDmg.m_iPatchOffset, &g_patchPzDmg.m_patchBytes, &g_patchPzDmg.m_originalBytes);
-	ProtectMemory(g_patchPzDmg.m_pForEachTerrorPlayer_HitAnnouncement, g_patchPzDmg.m_patchBytes.bytes, PAGE_EXECUTE_READ);
-	g_patchPzDmg.m_bPatchEnable = true;
 
 	return true;
 }
 
 void SMExtension::DestroyPatches()
 {
-	if (g_patchPzDmg.m_bPatchEnable) {
-		ApplyPatch(g_patchPzDmg.m_pForEachTerrorPlayer_HitAnnouncement, g_patchPzDmg.m_iPatchOffset, &g_patchPzDmg.m_originalBytes, NULL);
-		ProtectMemory(g_patchPzDmg.m_pForEachTerrorPlayer_HitAnnouncement, g_patchPzDmg.m_originalBytes.bytes, PAGE_EXECUTE_READ);
+	// Disable patches
+	static const struct {
+		CPatch& patch_info;
+	} s_patches[] = {
+		{ g_patchPzDmg },
+	};
 
-		g_patchPzDmg.m_bPatchEnable = false;
+	for (auto&& el : s_patches) {
+		if (el.patch_info.m_bPatchEnable) {
+			ApplyPatch(el.patch_info.m_pSignature, el.patch_info.m_iPatchOffset, &el.patch_info.m_originalBytes, NULL);
+			ProtectMemory(el.patch_info.m_pSignature, el.patch_info.m_originalBytes.bytes, PAGE_EXECUTE_READ);
+
+			el.patch_info.m_bPatchEnable = false;
+		}
 	}
 }
 

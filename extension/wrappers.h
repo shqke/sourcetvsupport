@@ -327,12 +327,12 @@ public:
 	}
 };
 
-class CPzMsgDamagePatch
+class CPatch
 {
 public:
 	bool m_bPatchEnable;
 
-	void* m_pForEachTerrorPlayer_HitAnnouncement;
+	void* m_pSignature;
 
 	int m_iPatchOffset;
 
@@ -340,11 +340,11 @@ public:
 	patch_t m_originalBytes;
 	patch_t m_patchBytes;
 
-	CPzMsgDamagePatch()
+	CPatch()
 	{
 		m_bPatchEnable = false;
 
-		m_pForEachTerrorPlayer_HitAnnouncement = NULL;
+		m_pSignature = NULL;
 
 		m_iPatchOffset = -1;
 		
