@@ -933,6 +933,12 @@ bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 		return false;
 	}
 
+	if (!CreatePatches(gc, error, maxlength)) {
+		gameconfs->CloseGameConfigFile(gc);
+
+		return false;
+	}
+
 	if (!SetupFromGameConfig(gc, error, maxlength)) {
 		gameconfs->CloseGameConfigFile(gc);
 
@@ -952,10 +958,6 @@ bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 	}
 
 	if (!CreateDetours(error, maxlength)) {
-		return false;
-	}
-
-	if (!CreatePatches(gc, error, maxlength)) {
 		return false;
 	}
 
