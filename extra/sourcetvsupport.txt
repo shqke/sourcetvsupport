@@ -90,6 +90,12 @@
 				"library"	"server"
 				"linux"		"@_ZN12CBaseAbility14ShouldTransmitEPK18CCheckTransmitInfo"
 			}
+
+			"ForEachTerrorPlayer<HitAnnouncement>"
+			{
+				"library"	"server"
+				"linux"		"@_Z19ForEachTerrorPlayerI15HitAnnouncementEbRT_"
+			}
 		}
 	}
 
@@ -119,6 +125,12 @@
 			{
 				"linux"		"49"
 				"windows"	"48"
+			}
+
+			"ForEachTerrorPlayer<HitAnnouncement>::offset"
+			{
+				"linux"		"124"
+				"windows"	"33"
 			}
 		}
 		
@@ -173,6 +185,14 @@
 				// Seventeenth (17) method of virtual table for "CBaseAbility"
 				"windows"		"\x57\x8B\xF9\x8B\x87\x74\x03\x00\x00\x83\xF8\xFF\x74\x2A\x8B\x15\x2A\x2A\x2A\x2A\x8B\xC8\x81\xE1\xFF\x0F\x00\x00\xC1\xE1\x04\x8D\x4C\x11\x04\x85\xC9\x74\x2A\xC1\xE8\x0C\x39\x41\x04\x75\x2A\x83\x39\x00"
 			}
+
+			"ForEachTerrorPlayer<HitAnnouncement>"
+			{
+				"library"	"server"
+				// 83 EC 20 56 57 8B 7C 24 2C 85 FF 8B F1 0F 84 ? ? ? ?
+				// Can be found using line 'PZDmgMsg'
+				"linux"		"\x83\xEC\x20\x56\x57\x8B\x7C\x24\x2C\x85\xFF\x8B\xF1\x0F\x84\x2A\x2A\x2A\x2A"
+			}
 		}
 	}
 
@@ -214,6 +234,12 @@
 			{
 				"linux"		"51"
 				"windows"	"50"
+			}
+
+			"ForEachTerrorPlayer<HitAnnouncement>::offset"
+			{
+				"linux"		"69"
+				"windows"	"35"
 			}
 		}
 		
@@ -275,6 +301,14 @@
 				// 55 8B EC 53 8B D9 8B 8B 38 04 00 00 
 				// Twentieth (20) method of virtual table for "CBaseAbility"
 				"windows"		"\x55\x8B\xEC\x53\x8B\xD9\x8B\x8B\x38\x04\x00\x00"
+			}
+
+			"ForEachTerrorPlayer<HitAnnouncement>"
+			{
+				"library"	"server"
+				// 55 8B EC 83 EC 20 56 57 8B 7D 08 8B F1 85 FF 0F 84 ? ? ? ?
+				// Can be found using line 'PZDmgMsg'
+				"linux"		"\x55\x8B\xEC\x83\xEC\x20\x56\x57\x8B\x7D\x08\x8B\xF1\x85\xFF\x0F\x84\x2A\x2A\x2A\x2A"
 			}
 		}
 	}

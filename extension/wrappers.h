@@ -29,6 +29,8 @@ extern IPlayerInfoManager* playerinfomanager;
 #include "sdk/engine/demo.h"
 #include "sdk/engine/clientframe.h"
 
+#include <CDetour/detours.h>
+
 #define TICK_INTERVAL			(gpGlobals->interval_per_tick)
 #define TIME_TO_TICKS( dt )		( (int)( 0.5f + (float)(dt) / TICK_INTERVAL ) )
 
@@ -322,6 +324,38 @@ public:
 		}
 
 		pPlayerInfo->ChangeTeam(teamIndex);
+	}
+};
+
+class CPzMsgDamagePatch
+{
+public:
+	bool m_bPatchEnable;
+
+	void* m_pForEachTerrorPlayer_HitAnnouncement;
+
+	int m_iPatchOffset;
+
+	patch_t m_checkBytes;
+	patch_t m_originalBytes;
+	patch_t m_patchBytes;
+
+	CPzMsgDamagePatch()
+	{
+		m_bPatchEnable = false;
+
+		m_pForEachTerrorPlayer_HitAnnouncement = NULL;
+
+		m_iPatchOffset = -1;
+		
+		m_checkBytes.patch[0] = '\0';
+		m_checkBytes.bytes = 0;
+
+		m_originalBytes.patch[0] = '\0';
+		m_originalBytes.bytes = 0;
+
+		m_patchBytes.patch[0] = '\0';
+		m_patchBytes.bytes = 0;
 	}
 };
 

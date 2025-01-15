@@ -60,11 +60,13 @@ class SMExtension :
 public:
 	void Load();
 	void Unload();
+	void DestroyPatches();
 
 private:
 	bool SetupFromGameConfig(IGameConfig* gc, char* error, int maxlength);
 	bool SetupFromSteamAPILibrary(char* error, int maxlength);
 	bool CreateDetours(char* error, size_t maxlength);
+	bool CreatePatches(char* error, size_t maxlength);
 
 public:
 	void OnGameServer_Init();

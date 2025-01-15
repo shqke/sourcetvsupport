@@ -23,6 +23,8 @@ CGlobalVars* gpGlobals = NULL;
 
 IServer* g_pGameIServer = NULL;
 
+CPzMsgDamagePatch g_patchPzDmg;
+
 int CBasePlayer::sendprop_m_fFlags = 0;
 int CBaseServer::offset_stringTableCRC = 0;
 int CBaseServer::vtblindex_GetChallengeNr = 0;
@@ -341,6 +343,7 @@ void SMExtension::Unload()
 		CFrameSnapshotManager::detour_LevelChanged = NULL;
 	}
 
+	DestroyPatches();
 	OnGameServer_Shutdown();
 
 	SH_REMOVE_HOOK(IHLTVDirector, SetHLTVServer, hltvdirector, SH_MEMBER(this, &SMExtension::Handler_CHLTVDirector_SetHLTVServer), true);
@@ -364,6 +367,7 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		{ "CBaseServer::GetChallengeNr", CBaseServer::vtblindex_GetChallengeNr },
 		{ "CBaseServer::GetChallengeType", CBaseServer::vtblindex_GetChallengeType },
 		{ "CBaseServer::ReplyChallenge", CBaseServer::vtblindex_ReplyChallenge },
+		{ "ForEachTerrorPlayer<HitAnnouncement>::offset", g_patchPzDmg.m_iPatchOffset },
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 		{ "CBaseServer::FillServerInfo", CBaseServer::vtblindex_FillServerInfo },
 	#if !defined _WIN32
@@ -391,6 +395,7 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		{ "CSteam3Server::NotifyClientDisconnect", CSteam3Server::pfn_NotifyClientDisconnect },
 		{ "CHLTVServer::AddNewFrame", CHLTVServer::pfn_AddNewFrame },
 		{ "CFrameSnapshotManager::LevelChanged", CFrameSnapshotManager::pfn_LevelChanged },
+		{ "ForEachTerrorPlayer<HitAnnouncement>", g_patchPzDmg.m_pForEachTerrorPlayer_HitAnnouncement },
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 		{ "CBaseClient::SendFullConnectEvent", CBaseClient::pfn_SendFullConnectEvent },
 #endif
@@ -452,6 +457,63 @@ bool SMExtension::SetupFromSteamAPILibrary(char* error, int maxlength)
 #endif
 
 	return true;
+}
+
+bool SMExtension::CreatePatches(char* error, size_t maxlength)
+{
+	// Bug: Usermessage 'PZDmgMsg' is not sent to SourceTV, remove 'IsBot' check.
+	// Function ForEachTerrorPlayer<HitAnnouncement>.
+
+#if defined _WIN32
+	// l4d1 and l4d2 (server.dll) (windows)
+	g_patchPzDmg.m_checkBytes.patch[0] = 0x0F; // jz instruction
+	g_patchPzDmg.m_checkBytes.patch[0] = 0x85; // jz instruction
+
+	g_patchPzDmg.m_patchBytes.patch[0] = 0x90; // 6 bytes nop
+	g_patchPzDmg.m_patchBytes.patch[1] = 0x90; // 6 bytes nop
+	g_patchPzDmg.m_patchBytes.patch[2] = 0x90; // 6 bytes nop
+	g_patchPzDmg.m_patchBytes.patch[3] = 0x90; // 6 bytes nop
+	g_patchPzDmg.m_patchBytes.patch[4] = 0x90; // 6 bytes nop
+	g_patchPzDmg.m_patchBytes.patch[5] = 0x90; // 6 bytes nop
+#else
+	g_patchPzDmg.m_checkBytes.patch[0] = 0x74; // jz instruction
+
+	g_patchPzDmg.m_patchBytes.patch[0] = 0xEB; // jmp instruction
+#endif
+
+	g_patchPzDmg.m_checkBytes.bytes = strlen((char*)g_patchPzDmg.m_checkBytes.patch);
+	g_patchPzDmg.m_patchBytes.bytes = strlen((char*)g_patchPzDmg.m_patchBytes.patch);
+
+	for (size_t i = 0; i < sizeof(g_patchPzDmg.m_checkBytes.patch) && i < g_patchPzDmg.m_checkBytes.bytes; i++) {
+		byte cCheckByte = *(reinterpret_cast<byte*>((uintptr_t)g_patchPzDmg.m_pForEachTerrorPlayer_HitAnnouncement + g_patchPzDmg.m_iPatchOffset + i));
+
+		if (cCheckByte == g_patchPzDmg.m_checkBytes.patch[i]) {
+			Msg("[Success] Offset '%d' for patch 'PZDmgMsg', patch size: %d. Byte '%x' expected, received byte '%x'.""\n", \
+				g_patchPzDmg.m_iPatchOffset, g_patchPzDmg.m_checkBytes.bytes, g_patchPzDmg.m_checkBytes.patch[i], cCheckByte);
+			continue;
+		}
+
+		Msg("[Error] Wrong offset '%d' for patch 'PZDmgMsg', patch size: %d. Byte '%x' expected, received byte '%x'. Please contact the author!""\n", \
+			g_patchPzDmg.m_iPatchOffset, g_patchPzDmg.m_checkBytes.bytes, g_patchPzDmg.m_checkBytes.patch[i], cCheckByte);
+
+		return false;
+	}
+
+	ApplyPatch(g_patchPzDmg.m_pForEachTerrorPlayer_HitAnnouncement, g_patchPzDmg.m_iPatchOffset, &g_patchPzDmg.m_patchBytes, &g_patchPzDmg.m_originalBytes);
+	ProtectMemory(g_patchPzDmg.m_pForEachTerrorPlayer_HitAnnouncement, g_patchPzDmg.m_patchBytes.bytes, PAGE_EXECUTE_READ);
+	g_patchPzDmg.m_bPatchEnable = true;
+
+	return true;
+}
+
+void SMExtension::DestroyPatches()
+{
+	if (g_patchPzDmg.m_bPatchEnable) {
+		ApplyPatch(g_patchPzDmg.m_pForEachTerrorPlayer_HitAnnouncement, g_patchPzDmg.m_iPatchOffset, &g_patchPzDmg.m_originalBytes, NULL);
+		ProtectMemory(g_patchPzDmg.m_pForEachTerrorPlayer_HitAnnouncement, g_patchPzDmg.m_originalBytes.bytes, PAGE_EXECUTE_READ);
+
+		g_patchPzDmg.m_bPatchEnable = false;
+	}
 }
 
 bool SMExtension::CreateDetours(char* error, size_t maxlength)
@@ -847,6 +909,10 @@ bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 	}
 
 	if (!CreateDetours(error, maxlength)) {
+		return false;
+	}
+
+	if (!CreatePatches(error, maxlength)) {
 		return false;
 	}
 
