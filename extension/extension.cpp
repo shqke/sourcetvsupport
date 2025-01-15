@@ -505,6 +505,12 @@ bool SMExtension::CreatePatches(IGameConfig* gc, char* error, size_t maxlength)
 		}
 
 		std::vector<uint8_t> vecBytes = ByteVectorFromString(keyValue);
+		if (vecBytes.size() == 0) {
+			ke::SafeSprintf(error, maxlength, "Unable to parse patch section for \"%s\" from game config (file: \"" GAMEDATA_FILE ".txt\")", el.keyBytes);
+
+			return false;
+		}
+
 		std::copy(vecBytes.begin(), vecBytes.end(), el.patch_info.patch);
 		el.patch_info.bytes = vecBytes.size();
 	}
@@ -526,9 +532,9 @@ bool SMExtension::CreatePatches(IGameConfig* gc, char* error, size_t maxlength)
 				continue;
 			}
 
-			Msg("[Error] Wrong offset '%d' for patch 'PZDmgMsg', patch size: %d. Byte '%x' expected, received byte '%x'. Please contact the author!""\n", \
-				el.patch_info.m_iPatchOffset, el.patch_info.m_checkBytes.bytes, el.patch_info.m_checkBytes.patch[i], cCheckByte);
-
+			ke::SafeSprintf(error, maxlength, "[Error] Wrong offset '%d' for patch 'PZDmgMsg', patch size: %d. Byte '%x' expected, received byte '%x'. Please contact the author!", \
+													el.patch_info.m_iPatchOffset, el.patch_info.m_checkBytes.bytes, el.patch_info.m_checkBytes.patch[i], cCheckByte);
+		
 			return false;
 		}
 
