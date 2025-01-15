@@ -467,7 +467,7 @@ bool SMExtension::CreatePatches(char* error, size_t maxlength)
 #if defined _WIN32
 	// l4d1 and l4d2 (server.dll) (windows)
 	g_patchPzDmg.m_checkBytes.patch[0] = 0x0F; // jz instruction
-	g_patchPzDmg.m_checkBytes.patch[0] = 0x85; // jz instruction
+	g_patchPzDmg.m_checkBytes.patch[1] = 0x85; // jz instruction
 
 	g_patchPzDmg.m_patchBytes.patch[0] = 0x90; // 6 bytes nop
 	g_patchPzDmg.m_patchBytes.patch[1] = 0x90; // 6 bytes nop
