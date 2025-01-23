@@ -1,5 +1,6 @@
 ﻿#include "extension.h"
 #include "wrappers.h"
+#include "patchmngr.h"
 
 #include "sdk/public/engine/inetsupport.h"
 #include "sdk/engine/networkstringtable.h"
@@ -341,6 +342,7 @@ void SMExtension::Unload()
 		CFrameSnapshotManager::detour_LevelChanged = NULL;
 	}
 
+	CPatchMngr::GetInstance().UnpatchAll();
 	OnGameServer_Shutdown();
 
 	SH_REMOVE_HOOK(IHLTVDirector, SetHLTVServer, hltvdirector, SH_MEMBER(this, &SMExtension::Handler_CHLTVDirector_SetHLTVServer), true);
@@ -450,6 +452,32 @@ bool SMExtension::SetupFromSteamAPILibrary(char* error, int maxlength)
 		}
 	}
 #endif
+
+	return true;
+}
+
+bool SMExtension::CreatePatches(IGameConfig* gc, char* error, size_t maxlength)
+{
+	CPatchParams cParams;
+	cParams.m_pszPatchName = "PZDmgMsg";
+	cParams.m_pszSignatureName = "ForEachTerrorPlayer<HitAnnouncement>::signature";
+	cParams.m_iPatchOffsetName = "ForEachTerrorPlayer<HitAnnouncement>::patch_offset";
+
+#if !defined _WIN32
+	cParams.m_pszCheckBytesName = "ForEachTerrorPlayer<HitAnnouncement>::check_bytes::linux";
+	cParams.m_pszPatchBytesName = "ForEachTerrorPlayer<HitAnnouncement>::patch_bytes::linux";
+#else
+	cParams.m_pszCheckBytesName = "ForEachTerrorPlayer<HitAnnouncement>::check_bytes::windows";
+	cParams.m_pszPatchBytesName = "ForEachTerrorPlayer<HitAnnouncement>::patch_bytes::windows";
+#endif
+
+	cParams.m_bSuccessMsg = false;
+	cParams.m_bActionMsg = true;
+	cParams.m_bEnable = true;
+
+	if (CPatchMngr::GetInstance().InitPatch(&cParams, gc, error, maxlength) == NULL) {
+		return false;
+	}
 
 	return true;
 }
@@ -829,6 +857,12 @@ bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 	}
 
 	if (!SetupFromGameConfig(gc, error, maxlength)) {
+		gameconfs->CloseGameConfigFile(gc);
+
+		return false;
+	}
+
+	if (!CreatePatches(gc, error, maxlength)) {
 		gameconfs->CloseGameConfigFile(gc);
 
 		return false;
