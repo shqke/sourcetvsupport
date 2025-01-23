@@ -1,5 +1,6 @@
 ﻿#include "extension.h"
 #include "wrappers.h"
+#include "patchmngr.h"
 
 #include "sdk/public/engine/inetsupport.h"
 #include "sdk/engine/networkstringtable.h"
@@ -343,7 +344,7 @@ void SMExtension::Unload()
 		CFrameSnapshotManager::detour_LevelChanged = NULL;
 	}
 
-	DestroyPatches();
+	CPatchMngr::GetInstance().UnpatchAll();
 	OnGameServer_Shutdown();
 
 	SH_REMOVE_HOOK(IHLTVDirector, SetHLTVServer, hltvdirector, SH_MEMBER(this, &SMExtension::Handler_CHLTVDirector_SetHLTVServer), true);
@@ -367,7 +368,6 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		{ "CBaseServer::GetChallengeNr", CBaseServer::vtblindex_GetChallengeNr },
 		{ "CBaseServer::GetChallengeType", CBaseServer::vtblindex_GetChallengeType },
 		{ "CBaseServer::ReplyChallenge", CBaseServer::vtblindex_ReplyChallenge },
-		{ "ForEachTerrorPlayer<HitAnnouncement>::offset", g_patchPzDmg.m_iPatchOffset },
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 		{ "CBaseServer::FillServerInfo", CBaseServer::vtblindex_FillServerInfo },
 	#if !defined _WIN32
@@ -395,7 +395,6 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		{ "CSteam3Server::NotifyClientDisconnect", CSteam3Server::pfn_NotifyClientDisconnect },
 		{ "CHLTVServer::AddNewFrame", CHLTVServer::pfn_AddNewFrame },
 		{ "CFrameSnapshotManager::LevelChanged", CFrameSnapshotManager::pfn_LevelChanged },
-		{ "ForEachTerrorPlayer<HitAnnouncement>", g_patchPzDmg.m_pSignature },
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 		{ "CBaseClient::SendFullConnectEvent", CBaseClient::pfn_SendFullConnectEvent },
 #endif
@@ -459,117 +458,30 @@ bool SMExtension::SetupFromSteamAPILibrary(char* error, int maxlength)
 	return true;
 }
 
-std::vector<uint8_t> ByteVectorFromString(const char* s)
-{
-	std::vector<uint8_t> payload;
-	std::string str(s);
-
-	for (size_t i = 0; i < str.length(); ++i) {
-		if (str[i] == '\\' && i + 1 < str.length() && str[i + 1] == 'x') {
-			if (i + 3 < str.length() && std::isxdigit(str[i + 2]) && std::isxdigit(str[i + 3])) {
-				std::string byteString = str.substr(i + 2, 2);
-				char* endPtr;
-				long byteValue = strtol(byteString.c_str(), &endPtr, 16);
-
-				if (endPtr != byteString.c_str() && *endPtr == '\0' && byteValue >= 0 && byteValue <= 255) {
-					payload.push_back(static_cast<uint8_t>(byteValue));
-				} else {
-					smutils->LogError(myself, "Warning: Invalid byte string '\\x%s' ignored.", byteString.c_str());
-				}
-				i += 3;
-			} else {
-				smutils->LogError(myself, "Warning: Incomplete byte sequence '\\x' ignored.");
-				i++;
-			}
-		}
-	}
-
-	return payload;
-}
-
 bool SMExtension::CreatePatches(IGameConfig* gc, char* error, size_t maxlength)
 {
-	// Load patch&check bytes
-	static const struct {
-		const char* keyBytes;
-		patch_t& patch_info;
-	} s_patchesBytes[] = {
-	#if !defined _WIN32
-		{ "ForEachTerrorPlayer<HitAnnouncement>::check_bytes::linux", g_patchPzDmg.m_checkBytes },
-		{ "ForEachTerrorPlayer<HitAnnouncement>::patch_bytes::linux", g_patchPzDmg.m_patchBytes },
-	#else
-		{ "ForEachTerrorPlayer<HitAnnouncement>::check_bytes::windows", g_patchPzDmg.m_checkBytes },
-		{ "ForEachTerrorPlayer<HitAnnouncement>::patch_bytes::windows", g_patchPzDmg.m_patchBytes },
-	#endif
-	};
+	CPatchParams cParams;
+	cParams.m_pszPatchName = "PZDmgMsg";
+	cParams.m_pszSignatureName = "ForEachTerrorPlayer<HitAnnouncement>::signature";
+	cParams.m_iPatchOffsetName = "ForEachTerrorPlayer<HitAnnouncement>::patch_offset";
 
-	for (auto&& el : s_patchesBytes) {
-		const char* keyValue = gc->GetKeyValue(el.keyBytes);
-		if (keyValue == NULL) {
-			ke::SafeSprintf(error, maxlength, "Unable to find patch section for \"%s\" from game config (file: \"" GAMEDATA_FILE ".txt\")", el.keyBytes);
+#if !defined _WIN32
+	cParams.m_pszCheckBytesName = "ForEachTerrorPlayer<HitAnnouncement>::check_bytes::linux";
+	cParams.m_pszPatchBytesName = "ForEachTerrorPlayer<HitAnnouncement>::patch_bytes::linux";
+#else
+	cParams.m_pszCheckBytesName = "ForEachTerrorPlayer<HitAnnouncement>::check_bytes::windows";
+	cParams.m_pszPatchBytesName = "ForEachTerrorPlayer<HitAnnouncement>::patch_bytes::windows";
+#endif
 
-			return false;
-		}
+	cParams.m_bSuccessMsg = false;
+	cParams.m_bActionMsg = true;
+	cParams.m_bEnable = true;
 
-		std::vector<uint8_t> vecBytes = ByteVectorFromString(keyValue);
-		if (vecBytes.size() == 0) {
-			ke::SafeSprintf(error, maxlength, "Unable to parse patch section for \"%s\" from game config (file: \"" GAMEDATA_FILE ".txt\")", el.keyBytes);
-
-			return false;
-		}
-
-		std::copy(vecBytes.begin(), vecBytes.end(), el.patch_info.patch);
-		el.patch_info.bytes = vecBytes.size();
-	}
-
-	// Check patches and enable
-	static const struct {
-		CPatch& patch_info;
-	} s_patches[] = {
-		{ g_patchPzDmg },
-	};
-
-	for (auto&& el : s_patches) {
-		for (size_t i = 0; i < sizeof(el.patch_info.m_checkBytes.patch) && i < el.patch_info.m_checkBytes.bytes; i++) {
-			byte cCheckByte = *(reinterpret_cast<byte*>((uintptr_t)el.patch_info.m_pSignature + el.patch_info.m_iPatchOffset + i));
-
-			if (cCheckByte == el.patch_info.m_checkBytes.patch[i]) {
-				Msg("[Success] Offset '%d' for patch 'PZDmgMsg', patch size: %d. Byte '%x' expected, received byte '%x'.""\n", \
-					el.patch_info.m_iPatchOffset, el.patch_info.m_checkBytes.bytes, el.patch_info.m_checkBytes.patch[i], cCheckByte);
-				continue;
-			}
-
-			ke::SafeSprintf(error, maxlength, "[Error] Wrong offset '%d' for patch 'PZDmgMsg', patch size: %d. Byte '%x' expected, received byte '%x'. Please contact the author!", \
-													el.patch_info.m_iPatchOffset, el.patch_info.m_checkBytes.bytes, el.patch_info.m_checkBytes.patch[i], cCheckByte);
-		
-			return false;
-		}
-
-		ApplyPatch(el.patch_info.m_pSignature, el.patch_info.m_iPatchOffset, &el.patch_info.m_patchBytes, &el.patch_info.m_originalBytes);
-		ProtectMemory(el.patch_info.m_pSignature, el.patch_info.m_patchBytes.bytes, PAGE_EXECUTE_READ);
-		el.patch_info.m_bPatchEnable = true;
+	if (CPatchMngr::GetInstance().InitPatch(&cParams, gc, error, maxlength) == NULL) {
+		return false;
 	}
 
 	return true;
-}
-
-void SMExtension::DestroyPatches()
-{
-	// Disable patches
-	static const struct {
-		CPatch& patch_info;
-	} s_patches[] = {
-		{ g_patchPzDmg },
-	};
-
-	for (auto&& el : s_patches) {
-		if (el.patch_info.m_bPatchEnable) {
-			ApplyPatch(el.patch_info.m_pSignature, el.patch_info.m_iPatchOffset, &el.patch_info.m_originalBytes, NULL);
-			ProtectMemory(el.patch_info.m_pSignature, el.patch_info.m_originalBytes.bytes, PAGE_EXECUTE_READ);
-
-			el.patch_info.m_bPatchEnable = false;
-		}
-	}
 }
 
 bool SMExtension::CreateDetours(char* error, size_t maxlength)

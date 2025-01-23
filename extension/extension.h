@@ -60,7 +60,6 @@ class SMExtension :
 public:
 	void Load();
 	void Unload();
-	void DestroyPatches();
 
 private:
 	bool SetupFromGameConfig(IGameConfig* gc, char* error, int maxlength);

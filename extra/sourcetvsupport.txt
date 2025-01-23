@@ -209,6 +209,9 @@
 	{
 		"Keys"
 		{
+			"ForEachTerrorPlayer<HitAnnouncement>::patch_offset"			"ForEachTerrorPlayer<HitAnnouncement>::offset"
+			"ForEachTerrorPlayer<HitAnnouncement>::signature"				"ForEachTerrorPlayer<HitAnnouncement>"
+
 			"ForEachTerrorPlayer<HitAnnouncement>::check_bytes::linux"		"\x74"
 			"ForEachTerrorPlayer<HitAnnouncement>::patch_bytes::linux"		"\xEB"
 

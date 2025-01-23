@@ -327,38 +327,6 @@ public:
 	}
 };
 
-class CPatch
-{
-public:
-	bool m_bPatchEnable;
-
-	void* m_pSignature;
-
-	int m_iPatchOffset;
-
-	patch_t m_checkBytes;
-	patch_t m_originalBytes;
-	patch_t m_patchBytes;
-
-	CPatch()
-	{
-		m_bPatchEnable = false;
-
-		m_pSignature = NULL;
-
-		m_iPatchOffset = -1;
-		
-		m_checkBytes.patch[0] = '\0';
-		m_checkBytes.bytes = 0;
-
-		m_originalBytes.patch[0] = '\0';
-		m_originalBytes.bytes = 0;
-
-		m_patchBytes.patch[0] = '\0';
-		m_patchBytes.bytes = 0;
-	}
-};
-
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 {
 	if (playerIndex > 0 && playerIndex <= playerhelpers->GetMaxClients()) {
