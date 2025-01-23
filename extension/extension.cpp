@@ -24,8 +24,6 @@ CGlobalVars* gpGlobals = NULL;
 
 IServer* g_pGameIServer = NULL;
 
-CPatch g_patchPzDmg;
-
 int CBasePlayer::sendprop_m_fFlags = 0;
 int CBaseServer::offset_stringTableCRC = 0;
 int CBaseServer::vtblindex_GetChallengeNr = 0;
