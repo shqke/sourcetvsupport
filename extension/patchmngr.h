@@ -1,6 +1,7 @@
 #ifndef _INCLUDE_STV_PATCHMNGR_H_
 #define _INCLUDE_STV_PATCHMNGR_H_
 
+#include <CDetour/detours.h>
 #include <map>
 #include <vector>
 
