@@ -36,9 +36,6 @@ jobs:
           - meta_version: "1.10"
             meta_branch: "1.10-dev"
             
-          - meta_version: latest
-            meta_branch: master
-            
           - os_short: linux
             
           - sm_version: "1.8"
