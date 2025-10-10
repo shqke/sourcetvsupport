@@ -109,8 +109,12 @@ bool CUtlStreamBuffer::IsOpen() const
 SMExtension g_Extension;
 SMEXT_LINK(&g_Extension);
 
-void TrySendPZMsgToSourceTV(const HitAnnouncement& refMsg)
+void TrySendPZMsgToSourceTV(const HitAnnouncement& rMsg)
 {
+	if (g_pHLTVServer == NULL) {
+		return;
+	}
+
 	int iSourceTVIndex = g_pHLTVServer->GetHLTVSlot() + 1;
 
 	CBasePlayer* pSourceTV = UTIL_PlayerByIndex(iSourceTVIndex);
@@ -119,83 +123,71 @@ void TrySendPZMsgToSourceTV(const HitAnnouncement& refMsg)
 	}
 
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
-	#define PZMSG_MESSAGEID 6 // L4D_SCAVENGE_DESTROY_GASCAN
+	#define GLOBAL_PZMSG_UPTO 6 // L4D_SCAVENGE_DESTROY_GASCAN
 #else
-	#define PZMSG_MESSAGEID 3 // L4D_KILLED2
+	#define GLOBAL_PZMSG_UPTO 3 // L4D_KILLED2
 #endif
 
 	// Let's try to send all the messages to the SourceTV,
 	// it will be possible to comment on this in the future.
-	/*if (!refMsg.m_bIgnoreTeamCheck && refMsg.m_iEventType > PZMSG_MESSAGEID) {
+	/*if (!rMsg.m_bIgnoreTeamCheck && rMsg.m_iEventType > GLOBAL_PZMSG_UPTO) {
 		return;
 	}*/
 
-	if (refMsg.m_pAttacker == NULL || refMsg.m_pVictim == NULL) {
+	if (rMsg.m_pAttacker == NULL || rMsg.m_pVictim == NULL) {
 		return;
 	}
 
-	int iAttackerUserId = refMsg.m_pAttacker->GetUserID();
-	int iVictimUserId = refMsg.m_pVictim->GetUserID();
-	if (iAttackerUserId <= 0 || iVictimUserId <= 0) {
-		return;
-	}
-
-	int iInflictorUserId = 0;
-	if (refMsg.m_pInflictor != NULL) {
-		iInflictorUserId = refMsg.m_pInflictor->GetUserID();
-
-		if (iInflictorUserId <= 0) {
-			iInflictorUserId = 0;
-		}
-	}
-
-	cell_t iPlayers[1] = { iSourceTVIndex };
-
-	bf_write* pBf = usermsgs->StartBitBufMessage(HitAnnouncement::pzMsgId, iPlayers, 1, USERMSG_RELIABLE);
+	bf_write* pBf = usermsgs->StartBitBufMessage(HitAnnouncement::pzMsgId, &iSourceTVIndex, 1, USERMSG_RELIABLE);
 	if (pBf != NULL) {
-		pBf->WriteByte(refMsg.m_iEventType);
+		pBf->WriteByte(rMsg.m_iEventType);
 
-		pBf->WriteShort(iAttackerUserId);
-		pBf->WriteShort(iVictimUserId);
-		pBf->WriteShort(iInflictorUserId);
+		pBf->WriteShort(rMsg.m_pAttacker->GetUserID());
+		pBf->WriteShort(rMsg.m_pVictim->GetUserID());
+		pBf->WriteShort((rMsg.m_pInflictor) ? rMsg.m_pInflictor->GetUserID() : 0);
 
-		pBf->WriteShort(refMsg.m_iDamageAmount);
+		pBf->WriteShort(rMsg.m_iDamageAmount);
 
 		usermsgs->EndMessage();
 
 		/*Msg("Send usermessage \"PZDmgMsg\" to SourceTV. Msg id: %d, attacker: %d, victim: %d, inflictor: %d, damage: %d, team check: %d""\n", \
-					refMsg.m_iEventType, iAttackerUserId, iVictimUserId, iInflictorUserId, refMsg.m_iDamageAmount, refMsg.m_bIgnoreTeamCheck);*/
+					rMsg.m_iEventType, 
+					rMsg.m_pAttacker->GetUserID(), 
+					rMsg.m_pVictim->GetUserID(), 
+					(rMsg.m_pInflictor) ? rMsg.m_pInflictor->GetUserID() : 0, 
+					rMsg.m_iDamageAmount, 
+					rMsg.m_bIgnoreTeamCheck);*/
 	}
 }
 
 // A1m`: Visual bug. usermessage "PZDmgMsg" is not sent to the SourceTV client
-DETOUR_DECL_STATIC1(Handler_ForEachTerrorPlayer__HitAnnouncement, bool, HitAnnouncement&, refMsg)
+DETOUR_DECL_STATIC1(Handler_ForEachTerrorPlayer__HitAnnouncement, bool, HitAnnouncement&, rMsg)
 {
-	bool bRet = DETOUR_STATIC_CALL(Handler_ForEachTerrorPlayer__HitAnnouncement)(refMsg);
+	bool bRetVal = DETOUR_STATIC_CALL(Handler_ForEachTerrorPlayer__HitAnnouncement)(rMsg);
 
-	TrySendPZMsgToSourceTV(refMsg);
+	TrySendPZMsgToSourceTV(rMsg);
 
-	return bRet;
+	return bRetVal;
 }
 
 // A1m`: Bug. infected players abilities are not sent, so the cooldown of abilities in versus-like modes is not visible in the HUD below. 
 // This is also relevant for spectators.
 DETOUR_DECL_MEMBER1(Handler_CBaseAbility__ShouldTransmit, int, const CCheckTransmitInfo*, pInfo)
 {
-	int iReturn = DETOUR_MEMBER_CALL(Handler_CBaseAbility__ShouldTransmit)(pInfo);
+	int iRetVal = DETOUR_MEMBER_CALL(Handler_CBaseAbility__ShouldTransmit)(pInfo);
 
-	if (iReturn == FL_EDICT_ALWAYS) {
-		return iReturn;
+	if (iRetVal == FL_EDICT_ALWAYS) {
+		return iRetVal;
 	}
 
 	IGamePlayer* pPlayer = playerhelpers->GetGamePlayer(pInfo->m_pClientEnt);
 	if (pPlayer == NULL) {
-		return iReturn;
+		return iRetVal;
 	}
 
 	IPlayerInfo* pPInfo = pPlayer->GetPlayerInfo();
 	if (pPInfo == NULL) {
-		return iReturn;
+		return iRetVal;
 	}
 
 	/* We send to spectators and SourceTV */
@@ -203,7 +195,7 @@ DETOUR_DECL_MEMBER1(Handler_CBaseAbility__ShouldTransmit, int, const CCheckTrans
 		return FL_EDICT_ALWAYS;
 	}
 
-	return iReturn;
+	return iRetVal;
 }
 
 // bug#X: hltv clients are sending "player_full_connect" event
@@ -359,12 +351,8 @@ void SMExtension::Load()
 	OnSetHLTVServer(hltvdirector->GetHLTVServer());
 	OnGameServer_Init();
 
-	HitAnnouncement::pzMsgId = usermsgs->GetMessageIndex("PZDmgMsg");
-	if (HitAnnouncement::pzMsgId != -1) {
-		HitAnnouncement::detour_ForEachTerrorPlayer->EnableDetour();
-	} else {
-		smutils->LogError(myself, "Unable to find usermessage \"PZDmgMsg\", detour for \"ForEachTerrorPlayer::HitAnnouncement\" will not be enabled!");
-	}
+	// g_pHLTVServer not null here
+	HitAnnouncement::detour_ForEachTerrorPlayer->EnableDetour();
 
 #ifdef TV_RELAYTEST
 	static ConVarRef clientport("clientport");
@@ -661,6 +649,8 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 	SH_REMOVE_HOOK_ID(shookid_CServerGameEnts_CheckTransmit);
 	shookid_CServerGameEnts_CheckTransmit = 0;
 
+	g_pHLTVServer = pIHLTVServer;
+
 	if (pIHLTVServer == NULL) {
 		return;
 	}
@@ -706,8 +696,6 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 	// client doesn't allow stringTableCRC to be empty
 	// CHLTVServer instance must copy property stringTableCRC from CGameServer instance
 	pServer->stringTableCRC() = CBaseServer::FromIServer(g_pGameIServer)->stringTableCRC();
-
-	g_pHLTVServer = pIHLTVServer;
 }
 
 void SMExtension::Handler_CHLTVDirector_SetHLTVServer(IHLTVServer* pIHLTVServer)
@@ -908,6 +896,13 @@ IClient* SMExtension::Handler_CHLTVServer_ConnectClient(netadr_t& adr, int proto
 
 bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 {
+	HitAnnouncement::pzMsgId = usermsgs->GetMessageIndex("PZDmgMsg");
+	if (HitAnnouncement::pzMsgId == -1) {
+		ke::SafeStrcpy(error, maxlength, "Unable to find usermessage \"PZDmgMsg\"!");
+
+		return false;
+	}
+
 	sm_sendprop_info_t info;
 	if (!gamehelpers->FindSendPropInfo("CBasePlayer", "m_fFlags", &info)) {
 		ke::SafeStrcpy(error, maxlength, "Unable to find SendProp \"CBasePlayer::m_fFlags\"");

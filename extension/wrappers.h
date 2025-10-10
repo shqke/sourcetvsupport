@@ -312,12 +312,7 @@ public:
 
 	int GetUserID()
 	{
-		edict_t* pEdict = edict();
-		if (pEdict == NULL) {
-			return -1;
-		}
-
-		return engine->GetPlayerUserId(pEdict);
+		return engine->GetPlayerUserId(edict());
 	}
 
 	void ChangeTeam(int teamIndex)
