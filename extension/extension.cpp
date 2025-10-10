@@ -122,18 +122,6 @@ void TrySendPZMsgToSourceTV(const HitAnnouncement& rMsg)
 		return;
 	}
 
-#if SOURCE_ENGINE == SE_LEFT4DEAD2
-	#define GLOBAL_PZMSG_UPTO 6 // L4D_SCAVENGE_DESTROY_GASCAN
-#else
-	#define GLOBAL_PZMSG_UPTO 3 // L4D_KILLED2
-#endif
-
-	// Let's try to send all the messages to the SourceTV,
-	// it will be possible to comment on this in the future.
-	/*if (!rMsg.m_bIgnoreTeamCheck && rMsg.m_iEventType > GLOBAL_PZMSG_UPTO) {
-		return;
-	}*/
-
 	if (rMsg.m_pAttacker == NULL || rMsg.m_pVictim == NULL) {
 		return;
 	}
@@ -170,7 +158,7 @@ DETOUR_DECL_STATIC1(Handler_ForEachTerrorPlayer__HitAnnouncement, bool, HitAnnou
 	return bRetVal;
 }
 
-// A1m`: Bug. infected players abilities are not sent, so the cooldown of abilities in versus-like modes is not visible in the HUD below. 
+// A1m`: Visual bug. infected players abilities are not sent, so the cooldown of abilities in versus-like modes is not visible in the HUD below. 
 // This is also relevant for spectators.
 DETOUR_DECL_MEMBER1(Handler_CBaseAbility__ShouldTransmit, int, const CCheckTransmitInfo*, pInfo)
 {
