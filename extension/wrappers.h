@@ -325,6 +325,15 @@ public:
 	}
 };
 
+class CTerrorPlayer :
+	public CBasePlayer
+{
+public:
+	static void* pfn_UpdateFXVolume;
+
+	static CDetour* detour_UpdateFXVolume;
+};
+
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 {
 	if (playerIndex > 0 && playerIndex <= playerhelpers->GetMaxClients()) {

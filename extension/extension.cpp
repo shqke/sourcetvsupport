@@ -55,6 +55,8 @@ void* CFrameSnapshotManager::pfn_LevelChanged = NULL;
 CDetour* CFrameSnapshotManager::detour_LevelChanged = NULL;
 void* CBaseAbility::pfn_ShouldTransmit = NULL;
 CDetour* CBaseAbility::detour_ShouldTransmit = NULL;
+void* CTerrorPlayer::pfn_UpdateFXVolume = NULL;
+CDetour* CTerrorPlayer::detour_UpdateFXVolume = NULL;
 
 int shookid_CHLTVDemoRecorder_RecordStringTables = 0;
 int shookid_CHLTVDemoRecorder_RecordServerClasses = 0;
@@ -103,6 +105,17 @@ bool CUtlStreamBuffer::IsOpen() const
 
 SMExtension g_Extension;
 SMEXT_LINK(&g_Extension);
+
+DETOUR_DECL_MEMBER0(Handler_CTerrorPlayer__UpdateFXVolume, void)
+{
+	CTerrorPlayer* pThis = (CTerrorPlayer*)this;
+
+	if (pThis->IsHLTV()) {
+		return;
+	}
+
+	DETOUR_MEMBER_CALL(Handler_CTerrorPlayer__UpdateFXVolume)();
+}
 
 // Bug: infected players abilities are not sent, so the cooldown of abilities in versus-like modes is not visible in the HUD below. 
 // This is also relevant for spectators.
@@ -341,6 +354,11 @@ void SMExtension::Unload()
 		CFrameSnapshotManager::detour_LevelChanged = NULL;
 	}
 
+	if (CTerrorPlayer::detour_UpdateFXVolume != NULL) {
+		CTerrorPlayer::detour_UpdateFXVolume->Destroy();
+		CTerrorPlayer::detour_UpdateFXVolume = NULL;
+	}
+
 	OnGameServer_Shutdown();
 
 	SH_REMOVE_HOOK(IHLTVDirector, SetHLTVServer, hltvdirector, SH_MEMBER(this, &SMExtension::Handler_CHLTVDirector_SetHLTVServer), true);
@@ -391,6 +409,7 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		{ "CSteam3Server::NotifyClientDisconnect", CSteam3Server::pfn_NotifyClientDisconnect },
 		{ "CHLTVServer::AddNewFrame", CHLTVServer::pfn_AddNewFrame },
 		{ "CFrameSnapshotManager::LevelChanged", CFrameSnapshotManager::pfn_LevelChanged },
+		{ "CTerrorPlayer::UpdateFXVolume", CTerrorPlayer::pfn_UpdateFXVolume },
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 		{ "CBaseClient::SendFullConnectEvent", CBaseClient::pfn_SendFullConnectEvent },
 #endif
@@ -506,6 +525,13 @@ bool SMExtension::CreateDetours(char* error, size_t maxlength)
 	CBaseAbility::detour_ShouldTransmit = DETOUR_CREATE_MEMBER(Handler_CBaseAbility__ShouldTransmit, CBaseAbility::pfn_ShouldTransmit);
 	if (CBaseAbility::detour_ShouldTransmit == NULL) {
 		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"CBaseAbility::ShouldTransmit\"");
+
+		return false;
+	}
+
+	CTerrorPlayer::detour_UpdateFXVolume = DETOUR_CREATE_MEMBER(Handler_CTerrorPlayer__UpdateFXVolume, CTerrorPlayer::pfn_UpdateFXVolume);
+	if (CTerrorPlayer::detour_UpdateFXVolume == NULL) {
+		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"CTerrorPlayer::UpdateFXVolume\"");
 
 		return false;
 	}
