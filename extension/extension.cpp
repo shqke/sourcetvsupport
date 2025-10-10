@@ -13,6 +13,7 @@
 // Interfaces
 INetworkStringTableContainer* networkStringTableContainerServer = NULL;
 IHLTVDirector* hltvdirector = NULL;
+IHLTVServer* g_pHLTVServer = NULL;
 INetSupport* g_pNetSupport = NULL;
 IPlayerInfoManager* playerinfomanager = NULL;
 IServerGameEnts* gameents = NULL;
@@ -55,6 +56,10 @@ void* CFrameSnapshotManager::pfn_LevelChanged = NULL;
 CDetour* CFrameSnapshotManager::detour_LevelChanged = NULL;
 void* CBaseAbility::pfn_ShouldTransmit = NULL;
 CDetour* CBaseAbility::detour_ShouldTransmit = NULL;
+void* HitAnnouncement::pfn_ForEachTerrorPlayer = NULL;
+CDetour* HitAnnouncement::detour_ForEachTerrorPlayer = NULL;
+
+int HitAnnouncement::pzMsgId = 0;
 
 int shookid_CHLTVDemoRecorder_RecordStringTables = 0;
 int shookid_CHLTVDemoRecorder_RecordServerClasses = 0;
@@ -104,7 +109,76 @@ bool CUtlStreamBuffer::IsOpen() const
 SMExtension g_Extension;
 SMEXT_LINK(&g_Extension);
 
-// Bug: infected players abilities are not sent, so the cooldown of abilities in versus-like modes is not visible in the HUD below. 
+void TrySendPZMsgToSourceTV(const HitAnnouncement& refMsg)
+{
+	int iSourceTVIndex = g_pHLTVServer->GetHLTVSlot() + 1;
+
+	CBasePlayer* pSourceTV = UTIL_PlayerByIndex(iSourceTVIndex);
+	if (pSourceTV == NULL || !pSourceTV->IsHLTV()) {
+		return;
+	}
+
+#if SOURCE_ENGINE == SE_LEFT4DEAD2
+	#define PZMSG_MESSAGEID 6 // L4D_SCAVENGE_DESTROY_GASCAN
+#else
+	#define PZMSG_MESSAGEID 3 // L4D_KILLED2
+#endif
+
+	// Let's try to send all the messages to the SourceTV,
+	// it will be possible to comment on this in the future.
+	/*if (!refMsg.m_bIgnoreTeamCheck && refMsg.m_iEventType > PZMSG_MESSAGEID) {
+		return;
+	}*/
+
+	if (refMsg.m_pAttacker == NULL || refMsg.m_pVictim == NULL) {
+		return;
+	}
+
+	int iAttackerUserId = refMsg.m_pAttacker->GetUserID();
+	int iVictimUserId = refMsg.m_pVictim->GetUserID();
+	if (iAttackerUserId <= 0 || iVictimUserId <= 0) {
+		return;
+	}
+
+	int iInflictorUserId = 0;
+	if (refMsg.m_pInflictor != NULL) {
+		iInflictorUserId = refMsg.m_pInflictor->GetUserID();
+
+		if (iInflictorUserId <= 0) {
+			iInflictorUserId = 0;
+		}
+	}
+
+	cell_t iPlayers[1] = { iSourceTVIndex };
+
+	bf_write* pBf = usermsgs->StartBitBufMessage(HitAnnouncement::pzMsgId, iPlayers, 1, USERMSG_RELIABLE);
+	if (pBf != NULL) {
+		pBf->WriteByte(refMsg.m_iEventType);
+
+		pBf->WriteShort(iAttackerUserId);
+		pBf->WriteShort(iVictimUserId);
+		pBf->WriteShort(iInflictorUserId);
+
+		pBf->WriteShort(refMsg.m_iDamageAmount);
+
+		usermsgs->EndMessage();
+
+		/*Msg("Send usermessage \"PZDmgMsg\" to SourceTV. Msg id: %d, attacker: %d, victim: %d, inflictor: %d, damage: %d, team check: %d""\n", \
+					refMsg.m_iEventType, iAttackerUserId, iVictimUserId, iInflictorUserId, refMsg.m_iDamageAmount, refMsg.m_bIgnoreTeamCheck);*/
+	}
+}
+
+// A1m`: Visual bug. usermessage "PZDmgMsg" is not sent to the SourceTV client
+DETOUR_DECL_STATIC1(Handler_ForEachTerrorPlayer__HitAnnouncement, bool, HitAnnouncement&, refMsg)
+{
+	bool bRet = DETOUR_STATIC_CALL(Handler_ForEachTerrorPlayer__HitAnnouncement)(refMsg);
+
+	TrySendPZMsgToSourceTV(refMsg);
+
+	return bRet;
+}
+
+// A1m`: Bug. infected players abilities are not sent, so the cooldown of abilities in versus-like modes is not visible in the HUD below. 
 // This is also relevant for spectators.
 DETOUR_DECL_MEMBER1(Handler_CBaseAbility__ShouldTransmit, int, const CCheckTransmitInfo*, pInfo)
 {
@@ -285,6 +359,13 @@ void SMExtension::Load()
 	OnSetHLTVServer(hltvdirector->GetHLTVServer());
 	OnGameServer_Init();
 
+	HitAnnouncement::pzMsgId = usermsgs->GetMessageIndex("PZDmgMsg");
+	if (HitAnnouncement::pzMsgId != -1) {
+		HitAnnouncement::detour_ForEachTerrorPlayer->EnableDetour();
+	} else {
+		smutils->LogError(myself, "Unable to find usermessage \"PZDmgMsg\", detour for \"ForEachTerrorPlayer::HitAnnouncement\" will not be enabled!");
+	}
+
 #ifdef TV_RELAYTEST
 	static ConVarRef clientport("clientport");
 	InvokeOpenSocketInternal(NS_CLIENT, clientport.GetInt(), PORT_SERVER, "client", true);
@@ -341,6 +422,11 @@ void SMExtension::Unload()
 		CFrameSnapshotManager::detour_LevelChanged = NULL;
 	}
 
+	if (HitAnnouncement::detour_ForEachTerrorPlayer != NULL) {
+		HitAnnouncement::detour_ForEachTerrorPlayer->Destroy();
+		HitAnnouncement::detour_ForEachTerrorPlayer = NULL;
+	}
+
 	OnGameServer_Shutdown();
 
 	SH_REMOVE_HOOK(IHLTVDirector, SetHLTVServer, hltvdirector, SH_MEMBER(this, &SMExtension::Handler_CHLTVDirector_SetHLTVServer), true);
@@ -391,6 +477,7 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		{ "CSteam3Server::NotifyClientDisconnect", CSteam3Server::pfn_NotifyClientDisconnect },
 		{ "CHLTVServer::AddNewFrame", CHLTVServer::pfn_AddNewFrame },
 		{ "CFrameSnapshotManager::LevelChanged", CFrameSnapshotManager::pfn_LevelChanged },
+		{ "ForEachTerrorPlayer::HitAnnouncement", HitAnnouncement::pfn_ForEachTerrorPlayer },
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 		{ "CBaseClient::SendFullConnectEvent", CBaseClient::pfn_SendFullConnectEvent },
 #endif
@@ -510,6 +597,13 @@ bool SMExtension::CreateDetours(char* error, size_t maxlength)
 		return false;
 	}
 
+	HitAnnouncement::detour_ForEachTerrorPlayer = DETOUR_CREATE_STATIC(Handler_ForEachTerrorPlayer__HitAnnouncement, HitAnnouncement::pfn_ForEachTerrorPlayer);
+	if (HitAnnouncement::detour_ForEachTerrorPlayer == NULL) {
+		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"ForEachTerrorPlayer::HitAnnouncement\"");
+
+		return false;
+	}
+
 	return true;
 }
 
@@ -612,6 +706,8 @@ void SMExtension::OnSetHLTVServer(IHLTVServer* pIHLTVServer)
 	// client doesn't allow stringTableCRC to be empty
 	// CHLTVServer instance must copy property stringTableCRC from CGameServer instance
 	pServer->stringTableCRC() = CBaseServer::FromIServer(g_pGameIServer)->stringTableCRC();
+
+	g_pHLTVServer = pIHLTVServer;
 }
 
 void SMExtension::Handler_CHLTVDirector_SetHLTVServer(IHLTVServer* pIHLTVServer)
