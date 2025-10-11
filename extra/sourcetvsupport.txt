@@ -103,7 +103,7 @@
 	{
 		"Addresses"
 		{
-			"ForEachTerrorPlayer<HitAnnouncement>::relativate_address"
+			"ForEachTerrorPlayer<HitAnnouncement>::relative_address"
 			{
 				"windows"
 				{
@@ -213,7 +213,7 @@
 	{
 		"Addresses"
 		{
-			"ForEachTerrorPlayer<HitAnnouncement>::relativate_address"
+			"ForEachTerrorPlayer<HitAnnouncement>::relative_address"
 			{
 				"windows"
 				{

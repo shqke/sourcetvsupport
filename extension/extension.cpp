@@ -57,7 +57,7 @@ CDetour* CFrameSnapshotManager::detour_LevelChanged = NULL;
 void* CBaseAbility::pfn_ShouldTransmit = NULL;
 CDetour* CBaseAbility::detour_ShouldTransmit = NULL;
 void* HitAnnouncement::pfn_ForEachTerrorPlayer = NULL;
-void* HitAnnouncement::pfn_RelativateAddress = NULL;
+void* HitAnnouncement::pfn_RelativeAddress = NULL;
 CDetour* HitAnnouncement::detour_ForEachTerrorPlayer = NULL;
 
 int HitAnnouncement::pzMsgId = 0;
@@ -481,7 +481,7 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		const char* key;
 		void*& address;
 	} s_addresses[] = {
-		{ "ForEachTerrorPlayer<HitAnnouncement>::relativate_address", HitAnnouncement::pfn_RelativateAddress },
+		{ "ForEachTerrorPlayer<HitAnnouncement>::relative_address", HitAnnouncement::pfn_RelativeAddress },
 	};
 
 	for (auto&& el : s_addresses) {

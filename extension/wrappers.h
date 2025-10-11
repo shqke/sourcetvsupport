@@ -341,7 +341,7 @@ class HitAnnouncement
 {
 public:
 	static void* pfn_ForEachTerrorPlayer;
-	static void* pfn_RelativateAddress;
+	static void* pfn_RelativeAddress;
 
 	static CDetour* detour_ForEachTerrorPlayer;
 
@@ -349,8 +349,8 @@ public:
 
 	static void* GetFunctionAddress()
 	{
-		if (pfn_RelativateAddress != NULL) {
-			return (uint8_t*)pfn_ForEachTerrorPlayer + (uint32_t)pfn_RelativateAddress;
+		if (pfn_RelativeAddress != NULL) {
+			return (uint8_t*)pfn_ForEachTerrorPlayer + (uint32_t)pfn_RelativeAddress;
 		}
 
 		return pfn_ForEachTerrorPlayer;
