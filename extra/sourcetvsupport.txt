@@ -101,6 +101,19 @@
 
 	"left4dead"
 	{
+		"Addresses"
+		{
+			"ForEachTerrorPlayer<HitAnnouncement>::relativate_address"
+			{
+				"windows"
+				{
+					"signature"		"ForEachTerrorPlayer<HitAnnouncement>"
+					"read"			"1" // Where does E8 byte start in the signature
+					"offset"		"5" // Address of the next instruction. After (E8 XX XX XX XX) - 5 bytes
+				}
+			}
+		}
+
 		"Offsets"
 		{
 			"CBaseServer::GetChallengeNr"
@@ -183,15 +196,34 @@
 			"ForEachTerrorPlayer<HitAnnouncement>"
 			{
 				"library"	"server"
-				// 83 EC 20 56 57 8B 7C 24 2C 85 FF 8B F1 0F 84 ? ? ? ?
-				// Can be found using line 'PZDmgMsg'
-				"windows"		"\x83\xEC\x20\x56\x57\x8B\x7C\x24\x2C\x85\xFF\x8B\xF1\x0F\x84\x2A\x2A\x2A\x2A"
+				// E8 ? ? ? ? 83 C4 ? EB ? 8B 55 ?
+				// We will locate the function "bool HitAnnouncement::operator()(CTerrorPlayer *pOther) const"
+				// using the string "PZDmgMsg". By examining the cross-reference (xref) to this function, 
+				// we can find the function we need: "ForEachTerrorPlayer<HitAnnouncement>".
+				//
+				// Since we cannot create a unique signature for this function, 
+				// we take any location where the function `ForEachTerrorPlayer<HitAnnouncement>` is called 
+				// and use the address of this function for the detour.
+				"windows"		"\xE8\x2A\x2A\x2A\x2A\x83\xC4\x2A\xEB\x2A\x8B\x55\x2A"
 			}
 		}
 	}
 
 	"left4dead2"
 	{
+		"Addresses"
+		{
+			"ForEachTerrorPlayer<HitAnnouncement>::relativate_address"
+			{
+				"windows"
+				{
+					"signature"		"ForEachTerrorPlayer<HitAnnouncement>"
+					"read"			"1" // Where does E8 byte start in the signature
+					"offset"		"5" // Address of the next instruction. After (E8 XX XX XX XX) - 5 bytes
+				}
+			}
+		}
+
 		"Offsets"
 		{
 			"CBaseServer::GetChallengeNr"
@@ -294,9 +326,15 @@
 			"ForEachTerrorPlayer<HitAnnouncement>"
 			{
 				"library"	"server"
-				// 55 8B EC 83 EC 20 56 57 8B 7D 08 8B F1 85 FF 0F 84 ? ? ? ?
-				// Can be found using line 'PZDmgMsg'
-				"windows"		"\x55\x8B\xEC\x83\xEC\x20\x56\x57\x8B\x7D\x08\x8B\xF1\x85\xFF\x0F\x84\x2A\x2A\x2A\x2A"
+				// E8 ? ? ? ? 83 C4 ? EB ? 8B 8D ? ? ? ? 8B 11 8B 82 ? ? ? ? FF D0 8B 8E ? ? ? ?
+				// We will locate the function "bool HitAnnouncement::operator()(CTerrorPlayer *pOther) const"
+				// using the string "PZDmgMsg". By examining the cross-reference (xref) to this function, 
+				// we can find the function we need: "ForEachTerrorPlayer<HitAnnouncement>".
+				//
+				// Since we cannot create a unique signature for this function, 
+				// we take any location where the function `ForEachTerrorPlayer<HitAnnouncement>` is called 
+				// and use the address of this function for the detour.
+				"windows"		"\xE8\x2A\x2A\x2A\x2A\x83\xC4\x2A\xEB\x2A\x8B\x8D\x2A\x2A\x2A\x2A\x8B\x11\x8B\x82\x2A\x2A\x2A\x2A\xFF\xD0\x8B\x8E\x2A\x2A\x2A\x2A"
 			}
 		}
 	}

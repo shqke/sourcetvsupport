@@ -57,6 +57,7 @@ CDetour* CFrameSnapshotManager::detour_LevelChanged = NULL;
 void* CBaseAbility::pfn_ShouldTransmit = NULL;
 CDetour* CBaseAbility::detour_ShouldTransmit = NULL;
 void* HitAnnouncement::pfn_ForEachTerrorPlayer = NULL;
+void* HitAnnouncement::pfn_RelativateAddress = NULL;
 CDetour* HitAnnouncement::detour_ForEachTerrorPlayer = NULL;
 
 int HitAnnouncement::pzMsgId = 0;
@@ -475,6 +476,29 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		}
 	}
 
+#if defined _WIN32
+	static const struct {
+		const char* key;
+		void*& address;
+	} s_addresses[] = {
+		{ "ForEachTerrorPlayer<HitAnnouncement>::relativate_address", HitAnnouncement::pfn_RelativateAddress },
+	};
+
+	for (auto&& el : s_addresses) {
+		if (!gc->GetAddress(el.key, &el.address)) {
+			ke::SafeSprintf(error, maxlength, "Failed to get address of function \"%s\" from game config (file: \"" GAMEDATA_FILE ".txt\")", el.key);
+
+			return false;
+		}
+
+		if (el.address == NULL) {
+			ke::SafeSprintf(error, maxlength, "Unable to resolve address \"%s\" (game config file: \"" GAMEDATA_FILE ".txt\")", el.key);
+
+			return false;
+		}
+	}
+#endif
+
 	return true;
 }
 
@@ -571,7 +595,7 @@ bool SMExtension::CreateDetours(char* error, size_t maxlength)
 		return false;
 	}
 
-	HitAnnouncement::detour_ForEachTerrorPlayer = DETOUR_CREATE_STATIC(Handler_ForEachTerrorPlayer__HitAnnouncement, HitAnnouncement::pfn_ForEachTerrorPlayer);
+	HitAnnouncement::detour_ForEachTerrorPlayer = DETOUR_CREATE_STATIC(Handler_ForEachTerrorPlayer__HitAnnouncement, HitAnnouncement::GetFunctionAddress());
 	if (HitAnnouncement::detour_ForEachTerrorPlayer == NULL) {
 		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"ForEachTerrorPlayer::HitAnnouncement\"");
 
