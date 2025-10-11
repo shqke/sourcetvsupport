@@ -326,6 +326,7 @@ void SMExtension::Load()
 	CSteam3Server::detour_NotifyClientDisconnect->EnableDetour();
 	CHLTVServer::detour_AddNewFrame->EnableDetour();
 	CFrameSnapshotManager::detour_LevelChanged->EnableDetour();
+	HitAnnouncement::detour_ForEachTerrorPlayer->EnableDetour();
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 	detour_SteamInternal_GameServer_Init->EnableDetour();
 	CBaseClient::detour_SendFullConnectEvent->EnableDetour();
@@ -338,9 +339,6 @@ void SMExtension::Load()
 
 	OnSetHLTVServer(hltvdirector->GetHLTVServer());
 	OnGameServer_Init();
-
-	// g_pHLTVServer not null here
-	HitAnnouncement::detour_ForEachTerrorPlayer->EnableDetour();
 
 #ifdef TV_RELAYTEST
 	static ConVarRef clientport("clientport");
