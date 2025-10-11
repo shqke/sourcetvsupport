@@ -197,7 +197,7 @@
 			{
 				"library"	"server"
 				// E8 ? ? ? ? 83 C4 ? EB ? 8B 55 ?
-				// We will locate the function "bool HitAnnouncement::operator()(CTerrorPlayer *pOther) const"
+				// A1m`: We will locate the function "bool HitAnnouncement::operator()(CTerrorPlayer *pOther) const"
 				// using the string "PZDmgMsg". By examining the cross-reference (xref) to this function, 
 				// we can find the function we need: "ForEachTerrorPlayer<HitAnnouncement>".
 				//
@@ -327,7 +327,7 @@
 			{
 				"library"	"server"
 				// E8 ? ? ? ? 83 C4 ? EB ? 8B 8D ? ? ? ? 8B 11 8B 82 ? ? ? ? FF D0 8B 8E ? ? ? ?
-				// We will locate the function "bool HitAnnouncement::operator()(CTerrorPlayer *pOther) const"
+				// A1m`: We will locate the function "bool HitAnnouncement::operator()(CTerrorPlayer *pOther) const"
 				// using the string "PZDmgMsg". By examining the cross-reference (xref) to this function, 
 				// we can find the function we need: "ForEachTerrorPlayer<HitAnnouncement>".
 				//
