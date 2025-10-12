@@ -49,13 +49,14 @@ enum ESocketIndex_t
 
 class IClient;
 
-#define CONNECTIONLESS_HEADER			0xFFFFFFFF	// all OOB packet start with this sequence
+#define CONNECTIONLESS_HEADER	0xFFFFFFFF	// all OOB packet start with this sequence
 #define S2C_CHALLENGE			'A' // + challenge value
 #define S2C_CONNREJECT			'9'  // Special protocol for rejected connections.
-#define PORT_SERVER			27015	// Default server port, UDP/TCP
+#define PORT_SERVER				27015	// Default server port, UDP/TCP
 
 class SMExtension :
-	public SDKExtension
+	public SDKExtension,
+	public IConCommandBaseAccessor
 {
 public:
 	void Load();
@@ -152,6 +153,9 @@ public: // IExtensionInterface
 	 * @return					True on success, false otherwise.
 	 */
 	bool QueryRunning(char* error, size_t maxlength) override;
+
+public: // IConCommandBaseAccessor
+	bool RegisterConCommandBase(ConCommandBase* pVar) override;
 };
 
 #endif // _INCLUDE_SOURCETV_SUPPORT_H_

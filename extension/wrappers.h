@@ -34,6 +34,9 @@ extern IPlayerInfoManager* playerinfomanager;
 
 class CDetour;
 
+static inline CBaseEntity* GetEntityHandle(CBaseHandle& refHandle);
+static inline void SetEntityHandle(CBaseHandle& refHandle, CBaseEntity* pEntity);
+
 void DataTable_WriteClassInfosBuffer(ServerClass* pClasses, bf_write* pBuf)
 {
 	int count = 0;
@@ -259,6 +262,11 @@ public:
 	{
 		return gameents->BaseEntityToEdict(this);
 	}
+
+	const char* GetClassName()
+	{
+		return edict()->GetClassName();
+	}
 };
 
 class CBaseAbility :
@@ -274,6 +282,9 @@ class CBasePlayer :
 {
 public:
 	static int sendprop_m_fFlags;
+	static int sendprop_m_PlayerFog_m_hCtrl;
+	static int sendprop_m_hPostProcessCtrl;
+	static int sendprop_m_hColorCorrectionCtrl;
 
 	IGamePlayer* GetIGamePlayer()
 	{
@@ -328,6 +339,29 @@ public:
 
 		pPlayerInfo->ChangeTeam(teamIndex);
 	}
+
+	void SetController(CBaseEntity* pSetEnt, int iNetpropOffset)
+	{
+		CBaseHandle& hCtrl = *(CBaseHandle*)((byte*)(this) + iNetpropOffset);
+		if (GetEntityHandle(hCtrl) == pSetEnt) {
+			return;
+		}
+
+		SetEntityHandle(hCtrl, pSetEnt);
+
+		edict_t* pEdict = edict();
+		if (pEdict != NULL) {
+			// CBasePlayer::NetworkStateChanged
+			gamehelpers->SetEdictStateChanged(pEdict, iNetpropOffset);
+		}
+	}
+
+	inline void ResetControllers()
+	{
+		SetController(NULL, sendprop_m_PlayerFog_m_hCtrl);
+		SetController(NULL, sendprop_m_hPostProcessCtrl);
+		SetController(NULL, sendprop_m_hColorCorrectionCtrl);
+	}
 };
 
 class CTerrorPlayer :
@@ -365,6 +399,47 @@ public:
 	int m_iDamageAmount;
 	bool m_bIgnoreTeamCheck;
 };
+
+class CFogVolume
+{
+public:
+	static void* pfn_FindFogVolumeForPosition;
+
+	static CDetour* detour_FindFogVolumeForPosition;
+
+	static CBaseHandle hCurrentUpdatePlayer;
+
+public:
+	static inline void SetCurrentPlayer(CTerrorPlayer* pPlayer)
+	{
+		SetEntityHandle(hCurrentUpdatePlayer, (CBaseEntity*)pPlayer);
+	}
+
+	static inline CTerrorPlayer* GetCurrentPlayer()
+	{
+		return (CTerrorPlayer*)GetEntityHandle(hCurrentUpdatePlayer);
+	}
+};
+
+static inline CBaseEntity* GetEntityHandle(CBaseHandle& refHandle)
+{
+	edict_t* pEdict = gamehelpers->GetHandleEntity(refHandle);
+	if (pEdict != NULL) {
+		return gameents->EdictToBaseEntity(pEdict);
+	}
+
+	return NULL;
+}
+
+static inline void SetEntityHandle(CBaseHandle& refHandle, CBaseEntity* pEntity)
+{
+	if (pEntity == NULL) {
+		refHandle.Set(NULL);
+		return;
+	}
+
+	gamehelpers->SetHandleEntity(refHandle, pEntity->edict());
+}
 
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 {
