@@ -2,6 +2,25 @@
 {
 	"#default"
 	{
+		"Addresses"
+		{
+			"ForEachTerrorPlayer<HitAnnouncement>"
+			{
+				"windows"
+				{
+					// Since we cannot create a unique signature for this function, 
+					// we take a location where the function `ForEachTerrorPlayer<HitAnnouncement>` is called 
+					// and use the address of this function for the detour.
+					"signature"		"CTerrorPlayer::OnPouncedOnSurvivor"
+				}
+
+				"linux"
+				{
+					"signature"		"ForEachTerrorPlayer<HitAnnouncement>"
+				}
+			}
+		}
+
 		"Offsets"
 		{
 			"CBaseServer::stringTableCRC"
@@ -96,11 +115,31 @@
 				"library"	"server"
 				"linux"		"@_ZN13CTerrorPlayer14UpdateFXVolumeEv"
 			}
+
+			"ForEachTerrorPlayer<HitAnnouncement>"
+			{
+				"library"	"server"
+				"linux"		"@_Z19ForEachTerrorPlayerI15HitAnnouncementEbRT_"
+			}
 		}
 	}
 
 	"left4dead"
 	{
+		"Addresses"
+		{
+			"CTerrorPlayer::OnPouncedOnSurvivor::`relofs to ForEachTerrorPlayer<HitAnnouncement>"
+			{
+				"windows"
+				{
+					// CALL rel32 instruction starts at CTerrorPlayer::OnPouncedOnSurvivor+1934
+					"signature"		"CTerrorPlayer::OnPouncedOnSurvivor"
+					"read"			"1935"
+					"offset"		"1939"
+				}
+			}
+		}
+
 		"Offsets"
 		{
 			"CBaseServer::GetChallengeNr"
@@ -187,11 +226,35 @@
 				// Can be found by line "master volume"
 				"windows"	"\x83\xEC\x14\x8B\x01"
 			}
+
+			"CTerrorPlayer::OnPouncedOnSurvivor"
+			{
+				"library"	"server"
+				// E8 ? ? ? ? 83 C4 ? EB ? 8B 55 ?
+				// We will locate the function "bool HitAnnouncement::operator()(CTerrorPlayer *pOther) const"
+				// using the string "PZDmgMsg". By examining the cross-reference (xref) to this function, 
+				// we can find the function we need: "ForEachTerrorPlayer<HitAnnouncement>".
+				"windows"		"\x55\x8B\xEC\x83\xE4\xF0\xA1\x2A\x2A\x2A\x2A\x81\xEC\x84\x01\x00\x00"
+			}
 		}
 	}
 
 	"left4dead2"
 	{
+		"Addresses"
+		{
+			"CTerrorPlayer::OnPouncedOnSurvivor::`relofs to ForEachTerrorPlayer<HitAnnouncement>"
+			{
+				"windows"
+				{
+					// CALL rel32 instruction starts at CTerrorPlayer::OnPouncedOnSurvivor+1451
+					"signature"		"CTerrorPlayer::OnPouncedOnSurvivor"
+					"read"			"1452"
+					"offset"		"1456"
+				}
+			}
+		}
+
 		"Offsets"
 		{
 			"CBaseServer::GetChallengeNr"
@@ -297,6 +360,16 @@
 				// 55 8B EC 83 EC 28 53 56 57 8B F9 
 				// Can be found by line "master volume"
 				"windows"	"\x55\x8B\xEC\x83\xEC\x28\x53\x56\x57\x8B\xF9"
+			}
+
+			"CTerrorPlayer::OnPouncedOnSurvivor"
+			{
+				"library"	"server"
+				// 53 8B DC 83 EC 08 83 E4 F0 83 C4 04 55 8B 6B 04 89 6C 24 04 8B EC 81 EC 88 01 00 00 
+				// We will locate the function "bool HitAnnouncement::operator()(CTerrorPlayer *pOther) const"
+				// using the string "PZDmgMsg". By examining the cross-reference (xref) to this function, 
+				// we can find the function we need: "ForEachTerrorPlayer<HitAnnouncement>".
+				"windows"		"\x53\x8B\xDC\x83\xEC\x08\x83\xE4\xF0\x83\xC4\x04\x55\x8B\x6B\x04\x89\x6C\x24\x04\x8B\xEC\x81\xEC\x88\x01\x00\x00"
 			}
 		}
 	}

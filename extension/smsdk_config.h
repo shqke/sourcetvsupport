@@ -4,7 +4,7 @@
 // Configuration
 #define SMEXT_CONF_NAME			"SourceTV Support"
 #define SMEXT_CONF_DESCRIPTION	"Restores broadcasting/recording SourceTV features in Left 4 Dead engine"
-#define SMEXT_CONF_VERSION		"0.10.1"
+#define SMEXT_CONF_VERSION		"0.10.3"
 #define SMEXT_CONF_AUTHOR		"Evgeniy \"shqke\" Kazakov"
 #define SMEXT_CONF_URL			"https://github.com/shqke/sourcetvsupport"
 #define SMEXT_CONF_LOGTAG		"STVS"
@@ -19,6 +19,7 @@
 #define SMEXT_ENABLE_PLAYERHELPERS
 #define SMEXT_ENABLE_GAMECONF
 #define SMEXT_ENABLE_GAMEHELPERS
+#define SMEXT_ENABLE_USERMSGS
 
 #define SMEXT_LINK(name) SDKExtension *g_pExtensionIface = name;
 
