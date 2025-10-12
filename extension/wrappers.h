@@ -310,6 +310,11 @@ public:
 		return pGamePlayer->IsSourceTV();
 	}
 
+	int GetUserID()
+	{
+		return engine->GetPlayerUserId(edict());
+	}
+
 	void ChangeTeam(int teamIndex)
 	{
 		IPlayerInfo* pPlayerInfo = playerinfomanager->GetPlayerInfo(edict());
@@ -323,6 +328,40 @@ public:
 
 		pPlayerInfo->ChangeTeam(teamIndex);
 	}
+};
+
+class CTerrorPlayer :
+	public CBasePlayer
+{
+public:
+	//
+};
+
+class HitAnnouncement
+{
+public:
+	static void* pfn_ForEachTerrorPlayer;
+
+	static CDetour* detour_ForEachTerrorPlayer;
+
+	static int pzMsgId;
+
+#if defined _WIN32
+	static void SetupFromRelativeAddress(ptrdiff_t relative)
+	{
+		pfn_ForEachTerrorPlayer = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(pfn_ForEachTerrorPlayer) + relative);
+	}
+#endif
+
+public:
+	int m_iEventType;
+
+	CTerrorPlayer* m_pVictim;
+	CTerrorPlayer* m_pAttacker;
+	CTerrorPlayer* m_pInflictor;
+
+	int m_iDamageAmount;
+	bool m_bIgnoreTeamCheck;
 };
 
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
