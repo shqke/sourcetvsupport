@@ -57,7 +57,6 @@ CDetour* CFrameSnapshotManager::detour_LevelChanged = NULL;
 void* CBaseAbility::pfn_ShouldTransmit = NULL;
 CDetour* CBaseAbility::detour_ShouldTransmit = NULL;
 void* HitAnnouncement::pfn_ForEachTerrorPlayer = NULL;
-void* HitAnnouncement::pfn_RelativeAddress = NULL;
 CDetour* HitAnnouncement::detour_ForEachTerrorPlayer = NULL;
 
 int HitAnnouncement::pzMsgId = 0;
@@ -452,7 +451,6 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		{ "CSteam3Server::NotifyClientDisconnect", CSteam3Server::pfn_NotifyClientDisconnect },
 		{ "CHLTVServer::AddNewFrame", CHLTVServer::pfn_AddNewFrame },
 		{ "CFrameSnapshotManager::LevelChanged", CFrameSnapshotManager::pfn_LevelChanged },
-		{ "ForEachTerrorPlayer<HitAnnouncement>", HitAnnouncement::pfn_ForEachTerrorPlayer },
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 		{ "CBaseClient::SendFullConnectEvent", CBaseClient::pfn_SendFullConnectEvent },
 #endif
@@ -477,11 +475,17 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 	}
 
 #if defined _WIN32
+	ptrdiff_t relative = 0;
+#endif
+
 	static const struct {
 		const char* key;
 		void*& address;
 	} s_addresses[] = {
-		{ "ForEachTerrorPlayer<HitAnnouncement>::relative_address", HitAnnouncement::pfn_RelativeAddress },
+		{ "ForEachTerrorPlayer<HitAnnouncement>", HitAnnouncement::pfn_ForEachTerrorPlayer },
+#if defined _WIN32
+		{ "CTerrorPlayer::OnPouncedOnSurvivor::`relofs to ForEachTerrorPlayer<HitAnnouncement>", reinterpret_cast<void*&>(relative) },
+#endif
 	};
 
 	for (auto&& el : s_addresses) {
@@ -497,6 +501,10 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 			return false;
 		}
 	}
+
+#if defined _WIN32
+	// NOTE: needs ForEachTerrorPlayer<HitAnnouncement> address set up
+	HitAnnouncement::SetupFromRelativeAddress(relative);
 #endif
 
 	return true;
@@ -595,9 +603,9 @@ bool SMExtension::CreateDetours(char* error, size_t maxlength)
 		return false;
 	}
 
-	HitAnnouncement::detour_ForEachTerrorPlayer = DETOUR_CREATE_STATIC(Handler_ForEachTerrorPlayer__HitAnnouncement, HitAnnouncement::GetFunctionAddress());
+	HitAnnouncement::detour_ForEachTerrorPlayer = DETOUR_CREATE_STATIC(Handler_ForEachTerrorPlayer__HitAnnouncement, HitAnnouncement::pfn_ForEachTerrorPlayer);
 	if (HitAnnouncement::detour_ForEachTerrorPlayer == NULL) {
-		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"ForEachTerrorPlayer::HitAnnouncement\"");
+		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"ForEachTerrorPlayer<HitAnnouncement>\"");
 
 		return false;
 	}

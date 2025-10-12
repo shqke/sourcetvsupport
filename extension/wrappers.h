@@ -341,20 +341,17 @@ class HitAnnouncement
 {
 public:
 	static void* pfn_ForEachTerrorPlayer;
-	static void* pfn_RelativeAddress;
 
 	static CDetour* detour_ForEachTerrorPlayer;
 
 	static int pzMsgId;
 
-	static void* GetFunctionAddress()
+#if defined _WIN32
+	static void SetupFromRelativeAddress(ptrdiff_t relative)
 	{
-		if (pfn_RelativeAddress != NULL) {
-			return (uint8_t*)pfn_ForEachTerrorPlayer + (uint32_t)pfn_RelativeAddress;
-		}
-
-		return pfn_ForEachTerrorPlayer;
+		pfn_ForEachTerrorPlayer = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(pfn_ForEachTerrorPlayer) + relative);
 	}
+#endif
 
 public:
 	int m_iEventType;

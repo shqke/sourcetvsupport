@@ -2,6 +2,25 @@
 {
 	"#default"
 	{
+		"Addresses"
+		{
+			"ForEachTerrorPlayer<HitAnnouncement>"
+			{
+				"windows"
+				{
+					// Since we cannot create a unique signature for this function, 
+					// we take a location where the function `ForEachTerrorPlayer<HitAnnouncement>` is called 
+					// and use the address of this function for the detour.
+					"signature"		"CTerrorPlayer::OnPouncedOnSurvivor"
+				}
+
+				"linux"
+				{
+					"signature"		"ForEachTerrorPlayer<HitAnnouncement>"
+				}
+			}
+		}
+
 		"Offsets"
 		{
 			"CBaseServer::stringTableCRC"
@@ -103,13 +122,14 @@
 	{
 		"Addresses"
 		{
-			"ForEachTerrorPlayer<HitAnnouncement>::relative_address"
+			"CTerrorPlayer::OnPouncedOnSurvivor::`relofs to ForEachTerrorPlayer<HitAnnouncement>"
 			{
 				"windows"
 				{
-					"signature"		"ForEachTerrorPlayer<HitAnnouncement>"
-					"read"			"1" // Where does E8 byte start in the signature
-					"offset"		"5" // Address of the next instruction. After (E8 XX XX XX XX) - 5 bytes
+					// CALL rel32 instruction starts at CTerrorPlayer::OnPouncedOnSurvivor+1934
+					"signature"		"CTerrorPlayer::OnPouncedOnSurvivor"
+					"read"			"1935"
+					"offset"		"1939"
 				}
 			}
 		}
@@ -193,18 +213,14 @@
 				"windows"		"\x57\x8B\xF9\x8B\x87\x74\x03\x00\x00\x83\xF8\xFF\x74\x2A\x8B\x15\x2A\x2A\x2A\x2A\x8B\xC8\x81\xE1\xFF\x0F\x00\x00\xC1\xE1\x04\x8D\x4C\x11\x04\x85\xC9\x74\x2A\xC1\xE8\x0C\x39\x41\x04\x75\x2A\x83\x39\x00"
 			}
 
-			"ForEachTerrorPlayer<HitAnnouncement>"
+			"CTerrorPlayer::OnPouncedOnSurvivor"
 			{
 				"library"	"server"
 				// E8 ? ? ? ? 83 C4 ? EB ? 8B 55 ?
-				// A1m`: We will locate the function "bool HitAnnouncement::operator()(CTerrorPlayer *pOther) const"
+				// We will locate the function "bool HitAnnouncement::operator()(CTerrorPlayer *pOther) const"
 				// using the string "PZDmgMsg". By examining the cross-reference (xref) to this function, 
 				// we can find the function we need: "ForEachTerrorPlayer<HitAnnouncement>".
-				//
-				// Since we cannot create a unique signature for this function, 
-				// we take any location where the function `ForEachTerrorPlayer<HitAnnouncement>` is called 
-				// and use the address of this function for the detour.
-				"windows"		"\xE8\x2A\x2A\x2A\x2A\x83\xC4\x2A\xEB\x2A\x8B\x55\x2A"
+				"windows"		"\x55\x8B\xEC\x83\xE4\xF0\xA1\x2A\x2A\x2A\x2A\x81\xEC\x84\x01\x00\x00"
 			}
 		}
 	}
@@ -213,13 +229,14 @@
 	{
 		"Addresses"
 		{
-			"ForEachTerrorPlayer<HitAnnouncement>::relative_address"
+			"CTerrorPlayer::OnPouncedOnSurvivor::`relofs to ForEachTerrorPlayer<HitAnnouncement>"
 			{
 				"windows"
 				{
-					"signature"		"ForEachTerrorPlayer<HitAnnouncement>"
-					"read"			"1" // Where does E8 byte start in the signature
-					"offset"		"5" // Address of the next instruction. After (E8 XX XX XX XX) - 5 bytes
+					// CALL rel32 instruction starts at CTerrorPlayer::OnPouncedOnSurvivor+1451
+					"signature"		"CTerrorPlayer::OnPouncedOnSurvivor"
+					"read"			"1452"
+					"offset"		"1456"
 				}
 			}
 		}
@@ -322,19 +339,15 @@
 				// Twentieth (20) method of virtual table for "CBaseAbility"
 				"windows"		"\x55\x8B\xEC\x53\x8B\xD9\x8B\x8B\x38\x04\x00\x00"
 			}
-
-			"ForEachTerrorPlayer<HitAnnouncement>"
+			
+			"CTerrorPlayer::OnPouncedOnSurvivor"
 			{
 				"library"	"server"
-				// E8 ? ? ? ? 83 C4 ? EB ? 8B 8D ? ? ? ? 8B 11 8B 82 ? ? ? ? FF D0 8B 8E ? ? ? ?
-				// A1m`: We will locate the function "bool HitAnnouncement::operator()(CTerrorPlayer *pOther) const"
+				// 53 8B DC 83 EC 08 83 E4 F0 83 C4 04 55 8B 6B 04 89 6C 24 04 8B EC 81 EC 88 01 00 00 
+				// We will locate the function "bool HitAnnouncement::operator()(CTerrorPlayer *pOther) const"
 				// using the string "PZDmgMsg". By examining the cross-reference (xref) to this function, 
 				// we can find the function we need: "ForEachTerrorPlayer<HitAnnouncement>".
-				//
-				// Since we cannot create a unique signature for this function, 
-				// we take any location where the function `ForEachTerrorPlayer<HitAnnouncement>` is called 
-				// and use the address of this function for the detour.
-				"windows"		"\xE8\x2A\x2A\x2A\x2A\x83\xC4\x2A\xEB\x2A\x8B\x8D\x2A\x2A\x2A\x2A\x8B\x11\x8B\x82\x2A\x2A\x2A\x2A\xFF\xD0\x8B\x8E\x2A\x2A\x2A\x2A"
+				"windows"		"\x53\x8B\xDC\x83\xEC\x08\x83\xE4\xF0\x83\xC4\x04\x55\x8B\x6B\x04\x89\x6C\x24\x04\x8B\xEC\x81\xEC\x88\x01\x00\x00"
 			}
 		}
 	}
