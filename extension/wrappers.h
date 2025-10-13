@@ -34,8 +34,8 @@ extern IPlayerInfoManager* playerinfomanager;
 
 class CDetour;
 
-static inline CBaseEntity* GetEntityHandle(CBaseHandle& refHandle);
-static inline void SetEntityHandle(CBaseHandle& refHandle, CBaseEntity* pEntity);
+inline CBaseEntity* GetEntityHandle(CBaseHandle& refHandle);
+inline void SetEntityHandle(CBaseHandle& refHandle, CBaseEntity* pEntity);
 
 void DataTable_WriteClassInfosBuffer(ServerClass* pClasses, bf_write* pBuf)
 {
@@ -263,7 +263,7 @@ public:
 		return gameents->BaseEntityToEdict(this);
 	}
 
-	const char* GetClassName()
+	const char* GetClassname()
 	{
 		return edict()->GetClassName();
 	}
@@ -343,17 +343,18 @@ public:
 	void SetController(CBaseEntity* pSetEnt, int iNetpropOffset)
 	{
 		CBaseHandle& hCtrl = *(CBaseHandle*)((byte*)(this) + iNetpropOffset);
-		if (GetEntityHandle(hCtrl) == pSetEnt) {
+		CBaseEntity *pCtrl = GetEntityHandle(hCtrl);
+		if (pCtrl == pSetEnt) {
 			return;
 		}
 
 		SetEntityHandle(hCtrl, pSetEnt);
 
-		edict_t* pEdict = edict();
-		if (pEdict != NULL) {
-			// CBasePlayer::NetworkStateChanged
-			gamehelpers->SetEdictStateChanged(pEdict, iNetpropOffset);
-		}
+		// CBasePlayer::NetworkStateChanged
+		gamehelpers->SetEdictStateChanged(edict(), iNetpropOffset);
+		/*Msg("Old ctrl: %s (%p), set ctrl: %s (%p). Change edict state.""\n",
+			(pCtrl) ? pCtrl->GetClassname() : "Unknown", pCtrl,
+			(pSetEnt) ? pSetEnt->GetClassname() : "Unknown", pSetEnt);*/
 	}
 
 	inline void ResetControllers()
@@ -421,7 +422,7 @@ public:
 	}
 };
 
-static inline CBaseEntity* GetEntityHandle(CBaseHandle& refHandle)
+inline CBaseEntity* GetEntityHandle(CBaseHandle& refHandle)
 {
 	edict_t* pEdict = gamehelpers->GetHandleEntity(refHandle);
 	if (pEdict != NULL) {
@@ -431,7 +432,7 @@ static inline CBaseEntity* GetEntityHandle(CBaseHandle& refHandle)
 	return NULL;
 }
 
-static inline void SetEntityHandle(CBaseHandle& refHandle, CBaseEntity* pEntity)
+inline void SetEntityHandle(CBaseHandle& refHandle, CBaseEntity* pEntity)
 {
 	if (pEntity == NULL) {
 		refHandle.Set(NULL);
@@ -443,14 +444,16 @@ static inline void SetEntityHandle(CBaseHandle& refHandle, CBaseEntity* pEntity)
 
 CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
 {
-	if (playerIndex > 0 && playerIndex <= playerhelpers->GetMaxClients()) {
-		IGamePlayer* pPlayer = playerhelpers->GetGamePlayer(playerIndex);
-		if (pPlayer != NULL) {
-			return (CBasePlayer*)gameents->EdictToBaseEntity(pPlayer->GetEdict());
-		}
+	if (playerIndex <= 0 || playerIndex > playerhelpers->GetMaxClients()) {
+		return NULL;
 	}
 
-	return NULL;
+	IGamePlayer* pPlayer = playerhelpers->GetGamePlayer(playerIndex);
+	if (pPlayer == NULL) {
+		return NULL;
+	}
+
+	return (CBasePlayer*)gameents->EdictToBaseEntity(pPlayer->GetEdict());
 }
 
 #endif // _INCLUDE_WRAPPERS_H_

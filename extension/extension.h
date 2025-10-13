@@ -158,4 +158,22 @@ public: // IConCommandBaseAccessor
 	bool RegisterConCommandBase(ConCommandBase* pVar) override;
 };
 
+#define HOOK_MEMBER(detourname, detour_ptr, handler, function_ptr) \
+{ \
+    detourname, \
+	detour_ptr, \
+	GET_MEMBER_CALLBACK(handler), \
+	GET_MEMBER_TRAMPOLINE(handler), \
+    (void*)function_ptr \
+}
+
+#define HOOK_STATIC(detourname, detour_ptr, handler, function_ptr) \
+{ \
+    detourname, \
+	detour_ptr, \
+    GET_STATIC_CALLBACK(handler), \
+	GET_STATIC_TRAMPOLINE(handler), \
+    (void*)function_ptr \
+}
+
 #endif // _INCLUDE_SOURCETV_SUPPORT_H_
