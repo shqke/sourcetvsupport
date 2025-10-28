@@ -1,5 +1,5 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
-import os, sys
+import os, sys, shutil
 
 class SDK(object):
   def __init__(self, sdk, ext, aDef, name, platform, dir):
@@ -80,6 +80,7 @@ class ExtensionConfig(object):
     self.swsdk_root = None
     self.all_targets = []
     self.target_archs = set()
+    self.libsafetyhook = {}
 
     if builder.options.targets:
       target_archs = builder.options.targets.split(',')
@@ -555,14 +556,15 @@ class ExtensionConfig(object):
   def AddCDetour(self, binary):
     sm_public_path = os.path.join(self.sm_root, 'public')
     
-    if os.path.exists(os.path.join(sm_public_path, 'safetyhook', 'safetyhook.cpp')):
-      binary.sources += [
-        os.path.join(sm_public_path, 'CDetour', 'detours.cpp'),
-        os.path.join(sm_public_path, 'safetyhook', 'safetyhook.cpp'),
-        os.path.join(sm_public_path, 'safetyhook', 'Zydis.c')
-      ]
-      binary.compiler.cxxincludes += [ os.path.join(sm_public_path, 'safetyhook') ]
-      binary.compiler.includes += [ os.path.join(sm_public_path, 'safetyhook') ]
+    if os.path.exists(os.path.join(sm_public_path, 'safetyhook')):
+      binary.sources += [ os.path.join(sm_public_path, 'CDetour', 'detours.cpp') ]
+      binary.compiler.cxxincludes += [ os.path.join(builder.sourcePath, 'safetyhook', 'include') ]
+
+      for task in self.libsafetyhook:
+        if task.target.arch == binary.compiler.target.arch:
+          binary.compiler.linkflags += [task.binary]
+          return
+      raise Exception('No suitable build of safetyhook was found.')
     else:
       binary.sources += [
         os.path.join(sm_public_path, 'CDetour', 'detours.cpp'),
@@ -598,6 +600,12 @@ class ExtensionConfig(object):
     self.ConfigureForExtension(context, binary.compiler)
     return binary
 
+class SafetyHookShim(object):
+  def __init__(self):
+    self.all_targets = {}
+    self.libsafetyhook = {}
+
+
 if getattr(builder, 'target', None) is not None:
     sys.stderr.write("Your output folder was configured for AMBuild 2.1.\n")
     sys.stderr.write("Please remove your output folder and reconfigure to continue.\n")
@@ -606,6 +614,16 @@ if getattr(builder, 'target', None) is not None:
 Extension = ExtensionConfig()
 Extension.detectSDKs()
 Extension.configure()
+
+if os.path.exists(os.path.join(Extension.sm_root, 'public', 'safetyhook')):
+    # we need to pull safetyhook in locally because ambuild does not take kindly to outside relpaths
+    safetyhook_dest = Normalize(builder.sourcePath + '/safetyhook/')
+    shutil.copytree(os.path.join(Extension.sm_root, 'public', 'safetyhook'), safetyhook_dest, dirs_exist_ok=True)
+
+    SafetyHook = SafetyHookShim()
+    SafetyHook.all_targets = Extension.all_targets
+    builder.Build('safetyhook/AMBuilder', {'SafetyHook': SafetyHook })
+    Extension.libsafetyhook = SafetyHook.libsafetyhook
 
 # This will clone the list and each cxx object as we recurse, preventing child
 # scripts from messing up global state.
