@@ -25,6 +25,9 @@ CGlobalVars* gpGlobals = NULL;
 IServer* g_pGameIServer = NULL;
 
 int CBasePlayer::sendprop_m_fFlags = 0;
+int CBasePlayer::sendprop_m_PlayerFog_m_hCtrl = 0;
+int CBasePlayer::sendprop_m_hPostProcessCtrl = 0;
+int CBasePlayer::sendprop_m_hColorCorrectionCtrl = 0;
 int CBaseServer::offset_stringTableCRC = 0;
 int CBaseServer::vtblindex_GetChallengeNr = 0;
 int CBaseServer::vtblindex_GetChallengeType = 0;
@@ -56,8 +59,13 @@ void* CFrameSnapshotManager::pfn_LevelChanged = NULL;
 CDetour* CFrameSnapshotManager::detour_LevelChanged = NULL;
 void* CBaseAbility::pfn_ShouldTransmit = NULL;
 CDetour* CBaseAbility::detour_ShouldTransmit = NULL;
+void* CTerrorPlayer::pfn_UpdateFXVolume = NULL;
+CDetour* CTerrorPlayer::detour_UpdateFXVolume = NULL;
 void* HitAnnouncement::pfn_ForEachTerrorPlayer = NULL;
 CDetour* HitAnnouncement::detour_ForEachTerrorPlayer = NULL;
+void* CFogVolume::pfn_FindFogVolumeForPosition = NULL;
+CDetour* CFogVolume::detour_FindFogVolumeForPosition = NULL;
+CBaseHandle CFogVolume::hCurrentUpdatePlayer = NULL;
 
 int HitAnnouncement::pzMsgId = 0;
 
@@ -101,6 +109,52 @@ bool CUtlStreamBuffer::IsOpen() const
 
 SMExtension g_Extension;
 SMEXT_LINK(&g_Extension);
+
+ConVar g_hCvarSTVFogUpdateType("stv_disable_fog_update",
+	"1",
+	FCVAR_CHEAT,
+	"Controls fog behavior for SourceTV: 0 = default game behavior, 1 = force global fog volume only, 2 = disable all fog volumes."
+);
+
+// A1m`: Visual bug. Local fog controllers, postprocess controllers, and colorcorrection controllers
+// that depend on the player's position cannot work correctly for SourceTV, since
+// the SourceTV camera is typically located at 0 0 0 on the map.
+// Whether we enable only global controllers on the map or disable all of them
+// depends on the 'stv_disable_fog_update' convar.
+// The problem can be seen on the map 'c1m4_atrium' (l4d2).
+DETOUR_DECL_MEMBER0(Handler_CTerrorPlayer__UpdateFXVolume, void)
+{
+	CFogVolume::SetCurrentPlayer(NULL);
+
+	if (g_hCvarSTVFogUpdateType.GetInt() > 0) {
+		CTerrorPlayer* pThis = (CTerrorPlayer*)this;
+
+		if (pThis->IsHLTV()) {
+			if (g_hCvarSTVFogUpdateType.GetInt() == 2) {
+				pThis->ResetControllers();
+				return;
+			}
+
+			CFogVolume::SetCurrentPlayer(pThis);
+		}
+	}
+
+	DETOUR_MEMBER_CALL(Handler_CTerrorPlayer__UpdateFXVolume)();
+	CFogVolume::SetCurrentPlayer(NULL);
+}
+
+DETOUR_DECL_STATIC1(Handler_CFogVolume__FindFogVolumeForPosition, CFogVolume*, const Vector&, refPos)
+{
+	CTerrorPlayer* pCurrentPlayer = CFogVolume::GetCurrentPlayer();
+
+	if (g_hCvarSTVFogUpdateType.GetInt() == 1 && pCurrentPlayer != NULL) {
+		if (pCurrentPlayer->IsHLTV()) {
+			return NULL;
+		}
+	}
+
+	return DETOUR_STATIC_CALL(Handler_CFogVolume__FindFogVolumeForPosition)(refPos);
+}
 
 void TrySendPZMsgToSourceTV(const HitAnnouncement& rMsg)
 {
@@ -320,6 +374,8 @@ void SMExtension::Load()
 	CHLTVServer::detour_AddNewFrame->EnableDetour();
 	CFrameSnapshotManager::detour_LevelChanged->EnableDetour();
 	HitAnnouncement::detour_ForEachTerrorPlayer->EnableDetour();
+	CTerrorPlayer::detour_UpdateFXVolume->EnableDetour();
+	CFogVolume::detour_FindFogVolumeForPosition->EnableDetour();
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 	detour_SteamInternal_GameServer_Init->EnableDetour();
 	CBaseClient::detour_SendFullConnectEvent->EnableDetour();
@@ -344,54 +400,40 @@ void SMExtension::Load()
 
 void SMExtension::Unload()
 {
-	if (CBaseAbility::detour_ShouldTransmit) {
-		CBaseAbility::detour_ShouldTransmit->Destroy();
-		CBaseAbility::detour_ShouldTransmit = NULL;
+	static const struct {
+		ICallWrapper*& ptr;
+	} s_vcallhooks[] = {
+		{ CBaseServer::vcall_GetChallengeNr },
+		{ CBaseServer::vcall_GetChallengeType },
+	};
+
+	for (auto&& vcallhook : s_vcallhooks) {
+		if (vcallhook.ptr != NULL) {
+			vcallhook.ptr->Destroy();
+			vcallhook.ptr = NULL;
+		}
 	}
 
-	if (CBaseServer::vcall_GetChallengeNr != NULL) {
-		CBaseServer::vcall_GetChallengeNr->Destroy();
-		CBaseServer::vcall_GetChallengeNr = NULL;
-	}
+	static const struct {
+		CDetour*& ptr;
+	} s_detourhooks[] = {
+		{ CBaseServer::detour_IsExclusiveToLobbyConnections },
+		{ CHLTVServer::detour_AddNewFrame },
+		{ CBaseClient::detour_SendFullConnectEvent },
+		{ detour_SteamInternal_GameServer_Init },
+		{ CSteam3Server::detour_NotifyClientDisconnect },
+		{ CFrameSnapshotManager::detour_LevelChanged },
+		{ CBaseAbility::detour_ShouldTransmit },
+		{ HitAnnouncement::detour_ForEachTerrorPlayer },
+		{ CTerrorPlayer::detour_UpdateFXVolume },
+		{ CFogVolume::detour_FindFogVolumeForPosition },
+	};
 
-	if (CBaseServer::vcall_GetChallengeType != NULL) {
-		CBaseServer::vcall_GetChallengeType->Destroy();
-		CBaseServer::vcall_GetChallengeType = NULL;
-	}
-
-	if (CBaseServer::detour_IsExclusiveToLobbyConnections != NULL) {
-		CBaseServer::detour_IsExclusiveToLobbyConnections->Destroy();
-		CBaseServer::detour_IsExclusiveToLobbyConnections = NULL;
-	}
-
-	if (CHLTVServer::detour_AddNewFrame != NULL) {
-		CHLTVServer::detour_AddNewFrame->Destroy();
-		CHLTVServer::detour_AddNewFrame = NULL;
-	}
-
-	if (CBaseClient::detour_SendFullConnectEvent != NULL) {
-		CBaseClient::detour_SendFullConnectEvent->Destroy();
-		CBaseClient::detour_SendFullConnectEvent = NULL;
-	}
-
-	if (detour_SteamInternal_GameServer_Init != NULL) {
-		detour_SteamInternal_GameServer_Init->Destroy();
-		detour_SteamInternal_GameServer_Init = NULL;
-	}
-
-	if (CSteam3Server::detour_NotifyClientDisconnect != NULL) {
-		CSteam3Server::detour_NotifyClientDisconnect->Destroy();
-		CSteam3Server::detour_NotifyClientDisconnect = NULL;
-	}
-
-	if (CFrameSnapshotManager::detour_LevelChanged != NULL) {
-		CFrameSnapshotManager::detour_LevelChanged->Destroy();
-		CFrameSnapshotManager::detour_LevelChanged = NULL;
-	}
-
-	if (HitAnnouncement::detour_ForEachTerrorPlayer != NULL) {
-		HitAnnouncement::detour_ForEachTerrorPlayer->Destroy();
-		HitAnnouncement::detour_ForEachTerrorPlayer = NULL;
+	for (auto&& detourhook : s_detourhooks) {
+		if (detourhook.ptr != NULL) {
+			detourhook.ptr->Destroy();
+			detourhook.ptr = NULL;
+		}
 	}
 
 	OnGameServer_Shutdown();
@@ -444,6 +486,8 @@ bool SMExtension::SetupFromGameConfig(IGameConfig* gc, char* error, int maxlengt
 		{ "CSteam3Server::NotifyClientDisconnect", CSteam3Server::pfn_NotifyClientDisconnect },
 		{ "CHLTVServer::AddNewFrame", CHLTVServer::pfn_AddNewFrame },
 		{ "CFrameSnapshotManager::LevelChanged", CFrameSnapshotManager::pfn_LevelChanged },
+		{ "CTerrorPlayer::UpdateFXVolume", CTerrorPlayer::pfn_UpdateFXVolume },
+		{ "CFogVolume::FindFogVolumeForPosition", CFogVolume::pfn_FindFogVolumeForPosition },
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
 		{ "CBaseClient::SendFullConnectEvent", CBaseClient::pfn_SendFullConnectEvent },
 #endif
@@ -545,62 +589,34 @@ bool SMExtension::CreateDetours(char* error, size_t maxlength)
 	// Game config is never used by detour class to handle errors ourselves
 	CDetourManager::Init(smutils->GetScriptingEngine(), NULL);
 
+	static const struct {
+		const char* detourname;
+		CDetour*& detour_ptr;
+		void* callback;
+		void** trampoline;
+		void* function_ptr;
+	} s_detours[] = {
 #if SOURCE_ENGINE == SE_LEFT4DEAD2
-	detour_SteamInternal_GameServer_Init = DETOUR_CREATE_STATIC(Handler_SteamInternal_GameServer_Init, pfn_SteamInternal_GameServer_Init);
-	if (detour_SteamInternal_GameServer_Init == NULL) {
-		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"SteamInternal_GameServer_Init\"");
-
-		return false;
-	}
-
-	CBaseClient::detour_SendFullConnectEvent = DETOUR_CREATE_MEMBER(Handler_CBaseClient_SendFullConnectEvent, CBaseClient::pfn_SendFullConnectEvent);
-	if (CBaseClient::detour_SendFullConnectEvent == NULL) {
-		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"CBaseClient::SendFullConnectEvent\"");
-
-		return false;
-	}
+		HOOK_STATIC("SteamInternal_GameServer_Init", detour_SteamInternal_GameServer_Init, Handler_SteamInternal_GameServer_Init, pfn_SteamInternal_GameServer_Init),
+		HOOK_MEMBER("CBaseClient::SendFullConnectEvent", CBaseClient::detour_SendFullConnectEvent, Handler_CBaseClient_SendFullConnectEvent, CBaseClient::pfn_SendFullConnectEvent),
 #endif
+		HOOK_MEMBER("CBaseServer::IsExclusiveToLobbyConnections", CBaseServer::detour_IsExclusiveToLobbyConnections, Handler_CBaseServer_IsExclusiveToLobbyConnections, CBaseServer::pfn_IsExclusiveToLobbyConnections),
+		HOOK_MEMBER("CSteam3Server::NotifyClientDisconnect", CSteam3Server::detour_NotifyClientDisconnect, Handler_CSteam3Server_NotifyClientDisconnect, CSteam3Server::pfn_NotifyClientDisconnect),
+		HOOK_MEMBER("CHLTVServer::AddNewFrame", CHLTVServer::detour_AddNewFrame, Handler_CHLTVServer_AddNewFrame, CHLTVServer::pfn_AddNewFrame),
+		HOOK_MEMBER("CFrameSnapshotManager::LevelChanged", CFrameSnapshotManager::detour_LevelChanged, Handler_CFrameSnapshotManager_LevelChanged, CFrameSnapshotManager::pfn_LevelChanged),
+		HOOK_MEMBER("CBaseAbility::ShouldTransmit", CBaseAbility::detour_ShouldTransmit, Handler_CBaseAbility__ShouldTransmit, CBaseAbility::pfn_ShouldTransmit),
+		HOOK_STATIC("ForEachTerrorPlayer<HitAnnouncement>", HitAnnouncement::detour_ForEachTerrorPlayer, Handler_ForEachTerrorPlayer__HitAnnouncement, HitAnnouncement::pfn_ForEachTerrorPlayer),
+		HOOK_MEMBER("CTerrorPlayer::UpdateFXVolume", CTerrorPlayer::detour_UpdateFXVolume, Handler_CTerrorPlayer__UpdateFXVolume, CTerrorPlayer::pfn_UpdateFXVolume),
+		HOOK_STATIC("CFogVolume::FindFogVolumeForPosition", CFogVolume::detour_FindFogVolumeForPosition, Handler_CFogVolume__FindFogVolumeForPosition, CFogVolume::pfn_FindFogVolumeForPosition),
+	};
 
-	CBaseServer::detour_IsExclusiveToLobbyConnections = DETOUR_CREATE_MEMBER(Handler_CBaseServer_IsExclusiveToLobbyConnections, CBaseServer::pfn_IsExclusiveToLobbyConnections);
-	if (CBaseServer::detour_IsExclusiveToLobbyConnections == NULL) {
-		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"CBaseServer::IsExclusiveToLobbyConnections\"");
+	for (auto&& entry : s_detours) {
+		entry.detour_ptr = CDetourManager::CreateDetour(entry.callback, entry.trampoline, entry.function_ptr);
 
-		return false;
-	}
-
-	CSteam3Server::detour_NotifyClientDisconnect = DETOUR_CREATE_MEMBER(Handler_CSteam3Server_NotifyClientDisconnect, CSteam3Server::pfn_NotifyClientDisconnect);
-	if (CSteam3Server::detour_NotifyClientDisconnect == NULL) {
-		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"CSteam3Server::NotifyClientDisconnect\"");
-
-		return false;
-	}
-
-	CHLTVServer::detour_AddNewFrame = DETOUR_CREATE_MEMBER(Handler_CHLTVServer_AddNewFrame, CHLTVServer::pfn_AddNewFrame);
-	if (CHLTVServer::detour_AddNewFrame == NULL) {
-		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"CHLTVServer::AddNewFrame\"");
-
-		return false;
-	}
-
-	CFrameSnapshotManager::detour_LevelChanged = DETOUR_CREATE_MEMBER(Handler_CFrameSnapshotManager_LevelChanged, CFrameSnapshotManager::pfn_LevelChanged);
-	if (CFrameSnapshotManager::detour_LevelChanged == NULL) {
-		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"CFrameSnapshotManager::LevelChanged\"");
-
-		return false;
-	}
-
-	CBaseAbility::detour_ShouldTransmit = DETOUR_CREATE_MEMBER(Handler_CBaseAbility__ShouldTransmit, CBaseAbility::pfn_ShouldTransmit);
-	if (CBaseAbility::detour_ShouldTransmit == NULL) {
-		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"CBaseAbility::ShouldTransmit\"");
-
-		return false;
-	}
-
-	HitAnnouncement::detour_ForEachTerrorPlayer = DETOUR_CREATE_STATIC(Handler_ForEachTerrorPlayer__HitAnnouncement, HitAnnouncement::pfn_ForEachTerrorPlayer);
-	if (HitAnnouncement::detour_ForEachTerrorPlayer == NULL) {
-		ke::SafeStrcpy(error, maxlength, "Unable to create a detour for \"ForEachTerrorPlayer<HitAnnouncement>\"");
-
-		return false;
+		if (entry.detour_ptr == NULL) {
+			ke::SafeSprintf(error, maxlength, "Unable to create detour for \"%s\"", entry.detourname);
+			return false;
+		}
 	}
 
 	return true;
@@ -913,15 +929,27 @@ bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 
 		return false;
 	}
+	
+	static const struct {
+		const char* classname;
+		const char* propname;
+		int& offset;
+	} s_sendprops[] = {
+		{ "CBasePlayer", "m_fFlags", CBasePlayer::sendprop_m_fFlags },
+		{ "CBasePlayer", "m_PlayerFog.m_hCtrl", CBasePlayer::sendprop_m_PlayerFog_m_hCtrl },
+		{ "CBasePlayer", "m_hPostProcessCtrl", CBasePlayer::sendprop_m_hPostProcessCtrl },
+		{ "CBasePlayer", "m_hColorCorrectionCtrl", CBasePlayer::sendprop_m_hColorCorrectionCtrl },
+	};
 
 	sm_sendprop_info_t info;
-	if (!gamehelpers->FindSendPropInfo("CBasePlayer", "m_fFlags", &info)) {
-		ke::SafeStrcpy(error, maxlength, "Unable to find SendProp \"CBasePlayer::m_fFlags\"");
+	for (auto&& sp : s_sendprops) {
+		if (!gamehelpers->FindSendPropInfo(sp.classname, sp.propname, &info)) {
+			ke::SafeSprintf(error, maxlength, "Unable to find SendProp \"%s::%s\"", sp.classname, sp.propname);
+			return false;
+		}
 
-		return false;
+		sp.offset = info.actual_offset;
 	}
-
-	CBasePlayer::sendprop_m_fFlags = info.actual_offset;
 
 	IGameConfig* gc = NULL;
 	if (!gameconfs->LoadGameConfigFile(GAMEDATA_FILE, &gc, error, maxlength)) {
@@ -955,12 +983,16 @@ bool SMExtension::SDK_OnLoad(char* error, size_t maxlength, bool late)
 	sharesys->AddDependency(myself, "bintools.ext", true, true);
 	sharesys->AddDependency(myself, "sdktools.ext", true, true);
 
+	ConVar_Register(0, this);
+
 	return true;
 }
 
 void SMExtension::SDK_OnUnload()
 {
 	Unload();
+
+	ConVar_Unregister();
 }
 
 void SMExtension::SDK_OnAllLoaded()
@@ -1017,4 +1049,10 @@ bool SMExtension::QueryRunning(char* error, size_t maxlength)
 	SM_CHECK_IFACE(BINTOOLS, bintools);
 
 	return true;
+}
+
+bool SMExtension::RegisterConCommandBase(ConCommandBase* pVar)
+{
+	// Notify metamod of ownership
+	return META_REGCVAR(pVar);
 }

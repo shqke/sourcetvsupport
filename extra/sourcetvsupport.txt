@@ -115,6 +115,18 @@
 				"library"	"server"
 				"linux"		"@_Z19ForEachTerrorPlayerI15HitAnnouncementEbRT_"
 			}
+
+			"CTerrorPlayer::UpdateFXVolume"
+			{
+				"library"	"server"
+				"linux"		"@_ZN13CTerrorPlayer14UpdateFXVolumeEv"
+			}
+
+			"CFogVolume::FindFogVolumeForPosition"
+			{
+				"library"	"server"
+				"linux"		"@_ZN10CFogVolume24FindFogVolumeForPositionERK6Vector"
+			}
 		}
 	}
 
@@ -208,9 +220,9 @@
 			"CBaseAbility::ShouldTransmit"
 			{
 				"library"	"server"
-				// 57 8B F9 8B 87 74 03 00 00 83 F8 FF 74 ? 8B 15 ? ? ? ? 8B C8 81 E1 FF 0F 00 00 C1 E1 04 8D 4C 11 04 85 C9 74 ? C1 E8 0C 39 41 04 75 ? 83 39 00 
+				// 57 8B F9 8B 87 74 03 00 00 83 F8 FF 74 ? 8B 15 ? ? ? ? 8B C8 81 E1 FF 0F 00 00 C1 E1 04 8D 4C 11 04 85 C9 74 ? C1 E8 0C 39 41 04 75 ? 83 39 00
 				// Seventeenth (17) method of virtual table for "CBaseAbility"
-				"windows"		"\x57\x8B\xF9\x8B\x87\x74\x03\x00\x00\x83\xF8\xFF\x74\x2A\x8B\x15\x2A\x2A\x2A\x2A\x8B\xC8\x81\xE1\xFF\x0F\x00\x00\xC1\xE1\x04\x8D\x4C\x11\x04\x85\xC9\x74\x2A\xC1\xE8\x0C\x39\x41\x04\x75\x2A\x83\x39\x00"
+				"windows"	"\x57\x8B\xF9\x8B\x87\x74\x03\x00\x00\x83\xF8\xFF\x74\x2A\x8B\x15\x2A\x2A\x2A\x2A\x8B\xC8\x81\xE1\xFF\x0F\x00\x00\xC1\xE1\x04\x8D\x4C\x11\x04\x85\xC9\x74\x2A\xC1\xE8\x0C\x39\x41\x04\x75\x2A\x83\x39\x00"
 			}
 
 			"CTerrorPlayer::OnPouncedOnSurvivor"
@@ -221,6 +233,22 @@
 				// using the string "PZDmgMsg". By examining the cross-reference (xref) to this function, 
 				// we can find the function we need: "ForEachTerrorPlayer<HitAnnouncement>".
 				"windows"		"\x55\x8B\xEC\x83\xE4\xF0\xA1\x2A\x2A\x2A\x2A\x81\xEC\x84\x01\x00\x00"
+			}
+
+			"CTerrorPlayer::UpdateFXVolume"
+			{
+				"library"	"server"
+				// 83 EC 14 8B 01
+				// Can be found by line "master volume"
+				"windows"	"\x83\xEC\x14\x8B\x01"
+			}
+
+			"CFogVolume::FindFogVolumeForPosition"
+			{
+				"library"	"server"
+				// 83 EC 0C 53 55 33 DB
+				// Can be found inside function "CTerrorPlayer::UpdateFXVolume"
+				"windows"	"\x83\xEC\x0C\x53\x55\x33\xDB"
 			}
 		}
 	}
@@ -335,19 +363,35 @@
 			"CBaseAbility::ShouldTransmit"
 			{
 				"library"	"server"
-				// 55 8B EC 53 8B D9 8B 8B 38 04 00 00 
+				// 55 8B EC 53 8B D9 8B 8B 38 04 00 00
 				// Twentieth (20) method of virtual table for "CBaseAbility"
 				"windows"		"\x55\x8B\xEC\x53\x8B\xD9\x8B\x8B\x38\x04\x00\x00"
 			}
-			
+
 			"CTerrorPlayer::OnPouncedOnSurvivor"
 			{
 				"library"	"server"
-				// 53 8B DC 83 EC 08 83 E4 F0 83 C4 04 55 8B 6B 04 89 6C 24 04 8B EC 81 EC 88 01 00 00 
+				// 53 8B DC 83 EC 08 83 E4 F0 83 C4 04 55 8B 6B 04 89 6C 24 04 8B EC 81 EC 88 01 00 00
 				// We will locate the function "bool HitAnnouncement::operator()(CTerrorPlayer *pOther) const"
 				// using the string "PZDmgMsg". By examining the cross-reference (xref) to this function, 
 				// we can find the function we need: "ForEachTerrorPlayer<HitAnnouncement>".
 				"windows"		"\x53\x8B\xDC\x83\xEC\x08\x83\xE4\xF0\x83\xC4\x04\x55\x8B\x6B\x04\x89\x6C\x24\x04\x8B\xEC\x81\xEC\x88\x01\x00\x00"
+			}
+
+			"CTerrorPlayer::UpdateFXVolume"
+			{
+				"library"	"server"
+				// 55 8B EC 83 EC 28 53 56 57 8B F9
+				// Can be found by line "master volume"
+				"windows"	"\x55\x8B\xEC\x83\xEC\x28\x53\x56\x57\x8B\xF9"
+			}
+
+			"CFogVolume::FindFogVolumeForPosition"
+			{
+				"library"	"server"
+				// 55 8B EC 83 EC 10 83 3D ? ? ? ? 00 53
+				// Can be found inside function "CTerrorPlayer::UpdateFXVolume"
+				"windows"	"\x55\x8B\xEC\x83\xEC\x10\x83\x3D\x2A\x2A\x2A\x2A\x00\x53"
 			}
 		}
 	}
