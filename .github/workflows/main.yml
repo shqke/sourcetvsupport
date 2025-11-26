@@ -30,7 +30,6 @@ jobs:
           - "latest"
           
         include:
-          # Use MM:Source 1.10 as base version
           - meta_version: "1.12"
             meta_branch: "1.12-dev"
             
