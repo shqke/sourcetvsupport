@@ -28,6 +28,7 @@ extern IPlayerInfoManager* playerinfomanager;
 
 #include "sdk/engine/demo.h"
 #include "sdk/engine/clientframe.h"
+#include "sdk/engine/baseserver.h"
 
 #define TICK_INTERVAL			(gpGlobals->interval_per_tick)
 #define TIME_TO_TICKS( dt )		( (int)( 0.5f + (float)(dt) / TICK_INTERVAL ) )
@@ -120,23 +121,15 @@ public:
 	}
 };
 
-class CBaseServer
-	: public IServer
+class CBaseServerWrapper
+	: public CBaseServer
 {
 public:
-	static int offset_stringTableCRC;
-	static int vtblindex_GetChallengeNr;
-	static int vtblindex_GetChallengeType;
-	static int vtblindex_ReplyChallenge;
 	static int vtblindex_FillServerInfo;
-	static int vtblindex_ConnectClient;
 
 	static void* pfn_IsExclusiveToLobbyConnections;
 
 	static CDetour* detour_IsExclusiveToLobbyConnections;
-
-	static ICallWrapper* vcall_GetChallengeNr;
-	static ICallWrapper* vcall_GetChallengeType;
 
 	static CBaseServer* FromIServer(IServer* pServer)
 	{
@@ -147,45 +140,9 @@ public:
 	{
 		return FromIServer(pHLTVServer->GetBaseServer());
 	}
-
-	CRC32_t& stringTableCRC()
-	{
-		return *reinterpret_cast<CRC32_t*>(reinterpret_cast<byte*>(this) + offset_stringTableCRC);
-	}
-
-	INetworkStringTableContainer* m_StringTables()
-	{
-		return *reinterpret_cast<INetworkStringTableContainer**>(reinterpret_cast<byte*>(this) + offset_stringTableCRC + 4);
-	}
-
-	int GetChallengeNr(netadr_t& adr)
-	{
-		struct {
-			CBaseServer* pServer;
-			netadr_s* adr;
-		} stack{ this, &adr };
-
-		int ret;
-		vcall_GetChallengeNr->Execute(&stack, &ret);
-
-		return ret;
-	}
-
-	int GetChallengeType(netadr_t& adr)
-	{
-		struct {
-			CBaseServer* pServer;
-			netadr_s* adr;
-		} stack{ this, &adr };
-
-		int ret;
-		vcall_GetChallengeType->Execute(&stack, &ret);
-
-		return ret;
-	}
 };
 
-class CHLTVServer
+class CHLTVServer : public CBaseServer
 {
 public:
 	static int offset_m_DemoRecorder;

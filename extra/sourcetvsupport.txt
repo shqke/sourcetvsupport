@@ -23,12 +23,6 @@
 
 		"Offsets"
 		{
-			"CBaseServer::stringTableCRC"
-			{
-				"linux"		"184"
-				"windows"	"184"
-			}
-
 			"CHLTVServer::CClientFrameManager"
 			{
 				"linux"		"460"
@@ -134,33 +128,6 @@
 			}
 		}
 
-		"Offsets"
-		{
-			"CBaseServer::GetChallengeNr"
-			{
-				"linux"		"52"
-				"windows"	"51"
-			}
-
-			"CBaseServer::GetChallengeType"
-			{
-				"linux"		"53"
-				"windows"	"52"
-			}
-
-			"CBaseServer::ReplyChallenge"
-			{
-				"linux"		"58"
-				"windows"	"57"
-			}
-
-			"CBaseServer::ConnectClient"
-			{
-				"linux"		"49"
-				"windows"	"48"
-			}
-		}
-		
 		"Signatures"
 		{
 			"DataTable_WriteSendTablesBuffer"
@@ -243,40 +210,12 @@
 
 		"Offsets"
 		{
-			"CBaseServer::GetChallengeNr"
-			{
-				"linux"		"54"
-				"windows"	"53"
-			}
-
-			"CBaseServer::GetChallengeType"
-			{
-				"linux"		"55"
-				"windows"	"54"
-			}
-
-			"CBaseServer::ReplyChallenge"
-			{
-				"linux"		"60"
-				"windows"	"59"
-			}
-
 			"CHLTVServer::FillServerInfo"
 			{
-				// Entry point "CHLTVDemoRecorder::WriteServerInfo"
+				// CHLTVServer::FillServerInfo is a virtual method in the CHLTVServer vtable.
+				// This index is used from CHLTVDemoRecorder::WriteServerInfo where the method
+				// is called through the CHLTVServer instance. It is not the CBaseServer vtable index.
 				"linux"		"9"
-			}
-
-			"CBaseServer::FillServerInfo"
-			{
-				"linux"		"47"
-				"windows"	"46"
-			}
-
-			"CBaseServer::ConnectClient"
-			{
-				"linux"		"51"
-				"windows"	"50"
 			}
 		}
 		

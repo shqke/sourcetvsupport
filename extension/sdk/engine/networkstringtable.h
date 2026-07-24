@@ -91,4 +91,21 @@ public:
 	INetworkStringDict		*m_pItemsClientSide;	 // For m_bAllowClientSideAddString, these items are non-networked and are referenced by a negative string index!!!
 };
 
+// 48 bytes l4d2&l4d1
+// Added for baseserver.h
+class CNetworkStringTableContainer : public INetworkStringTableContainer
+{
+private:
+	bool m_bAllowCreation;              // 0x04
+
+	int  m_nTickCount;                  // 0x08
+
+	bool m_bLocked;                     // 0x0C
+	bool m_bEnableRollback;             // 0x0D
+
+	CUtlVector<CNetworkStringTable*> m_Tables; // 0x10
+};
+
+static_assert(sizeof(CNetworkStringTableContainer) == 0x24);
+
 #endif // NETWORKSTRINGTABLE_H
