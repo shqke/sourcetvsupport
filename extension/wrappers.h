@@ -34,6 +34,9 @@ extern IPlayerInfoManager* playerinfomanager;
 
 class CDetour;
 
+inline CBaseEntity* GetEntityHandle(CBaseHandle& refHandle);
+inline void SetEntityHandle(CBaseHandle& refHandle, CBaseEntity* pEntity);
+
 void DataTable_WriteClassInfosBuffer(ServerClass* pClasses, bf_write* pBuf)
 {
 	int count = 0;
@@ -259,6 +262,11 @@ public:
 	{
 		return gameents->BaseEntityToEdict(this);
 	}
+
+	const char* GetClassname()
+	{
+		return edict()->GetClassName();
+	}
 };
 
 class CBaseAbility :
@@ -274,6 +282,9 @@ class CBasePlayer :
 {
 public:
 	static int sendprop_m_fFlags;
+	static int sendprop_m_PlayerFog_m_hCtrl;
+	static int sendprop_m_hPostProcessCtrl;
+	static int sendprop_m_hColorCorrectionCtrl;
 
 	IGamePlayer* GetIGamePlayer()
 	{
@@ -328,13 +339,39 @@ public:
 
 		pPlayerInfo->ChangeTeam(teamIndex);
 	}
+
+	void SetController(CBaseEntity* pSetEnt, int iNetpropOffset)
+	{
+		CBaseHandle& hCtrl = *(CBaseHandle*)((byte*)(this) + iNetpropOffset);
+		CBaseEntity *pCtrl = GetEntityHandle(hCtrl);
+		if (pCtrl == pSetEnt) {
+			return;
+		}
+
+		SetEntityHandle(hCtrl, pSetEnt);
+
+		// CBasePlayer::NetworkStateChanged
+		gamehelpers->SetEdictStateChanged(edict(), iNetpropOffset);
+		/*Msg("Old ctrl: %s (%p), set ctrl: %s (%p). Change edict state.""\n",
+			(pCtrl) ? pCtrl->GetClassname() : "Unknown", pCtrl,
+			(pSetEnt) ? pSetEnt->GetClassname() : "Unknown", pSetEnt);*/
+	}
+
+	inline void ResetControllers()
+	{
+		SetController(NULL, sendprop_m_PlayerFog_m_hCtrl);
+		SetController(NULL, sendprop_m_hPostProcessCtrl);
+		SetController(NULL, sendprop_m_hColorCorrectionCtrl);
+	}
 };
 
 class CTerrorPlayer :
 	public CBasePlayer
 {
 public:
-	//
+	static void* pfn_UpdateFXVolume;
+
+	static CDetour* detour_UpdateFXVolume;
 };
 
 class HitAnnouncement
@@ -364,16 +401,59 @@ public:
 	bool m_bIgnoreTeamCheck;
 };
 
-CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
+class CFogVolume
 {
-	if (playerIndex > 0 && playerIndex <= playerhelpers->GetMaxClients()) {
-		IGamePlayer* pPlayer = playerhelpers->GetGamePlayer(playerIndex);
-		if (pPlayer != NULL) {
-			return (CBasePlayer*)gameents->EdictToBaseEntity(pPlayer->GetEdict());
-		}
+public:
+	static void* pfn_FindFogVolumeForPosition;
+
+	static CDetour* detour_FindFogVolumeForPosition;
+
+	static CBaseHandle hCurrentUpdatePlayer;
+
+public:
+	static inline void SetCurrentPlayer(CTerrorPlayer* pPlayer)
+	{
+		SetEntityHandle(hCurrentUpdatePlayer, (CBaseEntity*)pPlayer);
+	}
+
+	static inline CTerrorPlayer* GetCurrentPlayer()
+	{
+		return (CTerrorPlayer*)GetEntityHandle(hCurrentUpdatePlayer);
+	}
+};
+
+inline CBaseEntity* GetEntityHandle(CBaseHandle& refHandle)
+{
+	edict_t* pEdict = gamehelpers->GetHandleEntity(refHandle);
+	if (pEdict != NULL) {
+		return gameents->EdictToBaseEntity(pEdict);
 	}
 
 	return NULL;
+}
+
+inline void SetEntityHandle(CBaseHandle& refHandle, CBaseEntity* pEntity)
+{
+	if (pEntity == NULL) {
+		refHandle.Set(NULL);
+		return;
+	}
+
+	gamehelpers->SetHandleEntity(refHandle, pEntity->edict());
+}
+
+CBasePlayer* UTIL_PlayerByIndex(int playerIndex)
+{
+	if (playerIndex <= 0 || playerIndex > playerhelpers->GetMaxClients()) {
+		return NULL;
+	}
+
+	IGamePlayer* pPlayer = playerhelpers->GetGamePlayer(playerIndex);
+	if (pPlayer == NULL) {
+		return NULL;
+	}
+
+	return (CBasePlayer*)gameents->EdictToBaseEntity(pPlayer->GetEdict());
 }
 
 #endif // _INCLUDE_WRAPPERS_H_
